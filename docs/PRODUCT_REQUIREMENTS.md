@@ -1,0 +1,35 @@
+# Product requirements
+
+The full requirements, roles, flows and MVP scope are in [BLUEPRINT.md](BLUEPRINT.md) (§1–§8). This file tracks what is **delivered**.
+
+| Requirement                               | Phase | Status                                               |
+| ----------------------------------------- | ----- | ---------------------------------------------------- |
+| App and API boot; app shows server status | 1     | ✅ Done                                              |
+| Register / login for 3 roles              | 2     | ✅ Done                                              |
+| Patient shell and tabs                    | 3     | ✅ Done                                              |
+| Doctor discovery                          | 4     | ✅ Done                                              |
+| Appointment booking                       | 5     | ✅ Done                                              |
+| Consultation (video + chat)               | 6     | ✅ Chat + lifecycle; real video deferred (demo mode) |
+| Digital prescription                      | 7     | ✅ Done                                              |
+| Pharmacy orders and tracking              | 8     | ⬜                                                   |
+
+## Moved out of their planned phase
+
+| Item (blueprint)                                             | Now                                                                              | Why                                                                                                                                                                          |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Complete-profile screen right after Register (§6)            | An optional "Add your details" card on Home, linking to Edit profile             | Same outcome, no extra step in sign-up; disappears once used                                                                                                                 |
+| Profile → Addresses (§5)                                     | Phase 8, with order review                                                       | Nothing uses an address until a medicine order                                                                                                                               |
+| Profile → Settings, data-saver toggle (§5, §17)              | When doctor photos exist (demo doctors have none; cards show initials)           | The toggle only turns images off                                                                                                                                             |
+| `SessionExpired` modal that returns to the same screen (§18) | Login screen shows "Please log in again to continue." and opens Home after login | Simpler; revisit if users lose their place often                                                                                                                             |
+| Translation catalog for all UI strings (§20)                 | Not started; English strings are in the screens                                  | Open decision, see the Phase 3 report                                                                                                                                        |
+| gzip on API responses (§17)                                  | Phase 11, at the hosting layer                                                   | Pages are 20 small cards; most hosts compress anyway                                                                                                                         |
+| Stored `slots` table generated ahead (§11)                   | Slots computed on request from weekly rules + days off                           | Same guarantee (DB overlap constraint) without a generator job, a HELD state or regenerating after edits                                                                     |
+| Per-doctor timezone (§11 AvailabilityRule)                   | Everything in IST                                                                | All users are in India; IST has no daylight saving                                                                                                                           |
+| Doctor "available" filter knows free slots                   | Knows only whether the doctor has hours that day                                 | Cheap query; revisit if fully-booked doctors confuse users                                                                                                                   |
+| Real video adapter (Phase 6, §13.2)                          | Demo `fake` provider; chat-only mode works                                       | Decided 2026-10-02: keep demo video for now and run consultations in chat; revisit in Phase 10. A real vendor needs an account and a native development build (not Expo Go). |
+| Realtime over WebSocket/SSE (ADR-3)                          | Long polling (`/updates?after=&wait=25`)                                         | Same instant feel, works through any network or proxy, no extra infrastructure                                                                                               |
+| Consultation row created at booking (§11)                    | Created at the first join                                                        | No row needed while nothing has happened; "scheduled" = no row                                                                                                               |
+| Separate `messaging` module (§9)                             | Messages live in the `consultations` module                                      | Chat only exists inside a consultation; Phase 7 posts the prescription card through it                                                                                       |
+| "Prescription issued" notification (Phase 7)                 | Phase 9, with the notification inbox                                             | A notification without an inbox to show it in would be invisible; the patient already sees the card in the chat and the Medicines tab                                        |
+| Doctor's "Prescriptions issued" list screen (§5)             | Reached per consultation (room, or the finished booking)                         | The API lists them (`GET /v1/prescriptions`); a separate screen can come with Phase 10 polish                                                                                |
+| Medicine catalog (Phase 8)                                   | Read-only catalog + search added in Phase 7                                      | The doctor needs it to prescribe; editing and stock stay in Phase 8                                                                                                          |

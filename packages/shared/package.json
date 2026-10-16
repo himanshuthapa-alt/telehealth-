@@ -1,0 +1,16 @@
+{
+  "name": "@telecare/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Types and constants shared by the TeleCare+ API and mobile app (the API contract).",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "name": "@telecare/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TeleCare+ backend: modular monolith (Express + PostgreSQL).",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "db:migrate": "tsx src/platform/db/migrate.ts",
+    "db:generate": "drizzle-kit generate",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:seed": "tsx src/seed.ts"
+  },
+  "dependencies": {
+    "@telecare/shared": "*",
+    "drizzle-orm": "^0.45.3",
+    "express": "^5.2.1",
+    "jose": "^6.2.12",
+    "pg": "^8.23.0",
+    "tsx": "^4.23.15",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.19.0",
+    "@types/pg": "^8.23.1",
+    "drizzle-kit": "^0.31.11"
+  }
+}

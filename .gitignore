@@ -1,0 +1,23 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+*.tsbuildinfo
+
+# environment (never commit real secrets; .env.example files are committed)
+.env
+.env.*
+!.env.example
+
+# Expo / React Native
+.expo/
+apps/mobile/android/
+apps/mobile/ios/
+*.apk
+*.aab
+
+# logs & OS
+npm-debug.log*
+.DS_Store
+coverage/

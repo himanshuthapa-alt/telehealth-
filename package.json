@@ -1,0 +1,42 @@
+{
+  "name": "telecare-plus",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "TeleCare+: Remote Health & Pharmacy Platform (college minor project)",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "db:up": "docker compose up -d --wait postgres",
+    "db:down": "docker compose down",
+    "db:migrate": "npm run db:migrate -w @telecare/api",
+    "dev:api": "npm run dev -w @telecare/api",
+    "dev:mobile": "npm run start -w @telecare/mobile",
+    "lint": "eslint . && npm run lint -w @telecare/mobile",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test",
+    "db:seed": "npm run db:seed -w @telecare/api"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "eslint": "^9.39.0",
+    "prettier": "^3.9.9",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.0",
+    "vitest": "^5.0.2"
+  },
+  "overrides": {
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  }
+}

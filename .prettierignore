@@ -1,0 +1,9 @@
+node_modules
+dist
+coverage
+.expo
+apps/mobile/android
+apps/mobile/ios
+apps/api/migrations/meta
+package-lock.json
+apps/mobile/assets
