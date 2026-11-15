@@ -16,6 +16,9 @@ import { users } from './users.schema';
 
 export const specialization = pgEnum('specialization', SPECIALIZATIONS);
 
+/** Where a doctor comes from: our own directory, or a contracted partner network (project map §4). */
+export const doctorSource = pgEnum('doctor_source', ['OWN', 'PARTNER']);
+
 /** Public doctor details, plus private ones (registration number) that are never sent to clients. */
 export const doctorProfiles = pgTable(
   'doctor_profiles',
@@ -33,6 +36,13 @@ export const doctorProfiles = pgTable(
     photoUrl: text(),
     /** Medical council registration. Private: never returned by the API. */
     registrationNumber: text(),
+    /** Accepts urgent voice pages right now (project map §6.3). Doctor toggles it. */
+    onCall: boolean().notNull().default(false),
+    source: doctorSource().notNull().default('OWN'),
+    /** Set for PARTNER doctors; null for our own. No FK yet (partners module is later). */
+    partnerProviderId: uuid(),
+    /** Throttle for urgent paging so one doctor isn't flooded. */
+    maxUrgentPerHour: integer().notNull().default(6),
     isDemo: boolean().notNull().default(false),
     isActive: boolean().notNull().default(true),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),

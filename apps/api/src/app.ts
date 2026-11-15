@@ -34,6 +34,16 @@ import { medicineRoutes } from './modules/pharmacy/medicines.routes';
 import { createPrescriptionRepository } from './modules/prescriptions/prescriptions.repository';
 import { prescriptionRoutes } from './modules/prescriptions/prescriptions.routes';
 import { createPrescriptionService } from './modules/prescriptions/prescriptions.service';
+import { createVoiceRepository } from './modules/voice/voice.repository';
+import { createVoiceService } from './modules/voice/voice.service';
+import { voiceRoutes } from './modules/voice/voice.routes';
+import type { VoiceProviders } from './modules/voice/providers';
+import { createTriageService } from './modules/triage/triage.service';
+import { createMatchingRepository } from './modules/matching/matching.repository';
+import { createMatchingService } from './modules/matching/matching.service';
+import { createDispatchRepository } from './modules/dispatch/dispatch.repository';
+import { createDispatchService } from './modules/dispatch/dispatch.service';
+import { dispatchRoutes } from './modules/dispatch/dispatch.routes';
 import { addDays, istInstant } from '@telecare/shared';
 
 export interface AppDeps {
@@ -47,6 +57,11 @@ export interface AppDeps {
   now?: () => Date;
   /** null = consultations run in chat only. */
   video: VideoProvider | null;
+  /** Voice-first adapters (STT/TTS/LLM/telephony), each with a fake mode. */
+  voice: VoiceProviders;
+  /** Hours to keep raw symptom audio server-side (0 = never). */
+  voiceRetentionHours: number;
+  triagePromptVersion: string;
 }
 
 /**
@@ -124,6 +139,37 @@ export function createApp(deps: AppDeps) {
   );
   // The server runs this every minute to close consultations whose window has passed.
   app.locals.sweepConsultations = consultationService.sweep;
+
+  // --- Voice-first triage (project map §5–§8): speak -> STT -> language -> triage
+  //     (red-flags first) -> matching -> routine booking or urgent paging. ---
+  const triageService = createTriageService({
+    llm: deps.voice.llm,
+    fallback: deps.voice.fallback,
+    promptVersion: deps.triagePromptVersion,
+    logger: deps.logger,
+  });
+  const voiceService = createVoiceService({
+    stt: deps.voice.stt,
+    tts: deps.voice.tts,
+    triage: triageService,
+    repo: createVoiceRepository(deps.db),
+    retentionHours: deps.voiceRetentionHours,
+    promptVersion: deps.triagePromptVersion,
+    now,
+    logger: deps.logger,
+  });
+  const matchingService = createMatchingService({
+    directory,
+    repo: createMatchingRepository(deps.db),
+  });
+  const dispatchRepo = createDispatchRepository(deps.db);
+  const dispatchService = createDispatchService({
+    repo: dispatchRepo,
+    telephony: deps.voice.telephony,
+    logger: deps.logger,
+  });
+  app.use(voiceRoutes({ voice: voiceService, matching: matchingService, dispatch: dispatchService }, guards));
+  app.use(dispatchRoutes(dispatchService, dispatchRepo, guards));
   app.use(
     appointmentRoutes(
       createAppointmentService({ repo: appointmentRepo, slots, audit: createAuditLog(deps.db), now }),
