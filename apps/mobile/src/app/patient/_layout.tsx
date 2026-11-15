@@ -7,6 +7,8 @@ export default function Layout() {
   return (
     <Tabs screenOptions={{ ...tabScreenOptions, headerShown: false }}>
       <Tabs.Screen name="home" options={{ title: 'Home', tabBarIcon: tabIcon(ICONS.home) }} />
+      {/* Voice-first front door: a villager speaks instead of reading or searching (project map §4). */}
+      <Tabs.Screen name="voice" options={{ title: 'बोलिए', tabBarIcon: tabIcon(ICONS.mic) }} />
       <Tabs.Screen name="doctors" options={{ title: 'Doctors', tabBarIcon: tabIcon(ICONS.doctor) }} />
       {/* "Bookings", not "Appointments": short enough to never be cut off, and a word people know from train tickets. */}
       <Tabs.Screen name="appointments" options={{ title: 'Bookings', tabBarIcon: tabIcon(ICONS.bookings) }} />
