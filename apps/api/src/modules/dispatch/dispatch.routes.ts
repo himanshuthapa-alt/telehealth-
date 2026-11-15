@@ -18,15 +18,16 @@ export function dispatchRoutes(
   const router = Router();
   const doctor = [guards.requireAuth, guards.requireRole('DOCTOR')];
 
-  // Accept / decline an urgent page (IVR webhook or a tap in the doctor app).
+  // Accept / decline an urgent page. Scoped to the doctor who was actually paged,
+  // so a doctor can't act on another doctor's page (IDOR) and only an open page responds.
   router.post('/v1/dispatch/:id/accept', ...doctor, async (req, res) => {
-    const ok = await service.respond(idOf(req.params.id), true);
+    const ok = await service.respond(idOf(req.params.id), getActor(res).id, true);
     if (!ok) throw new AppError(404, 'NOT_FOUND', 'Page not found');
     res.json({ status: 'ACCEPTED' });
   });
 
   router.post('/v1/dispatch/:id/decline', ...doctor, async (req, res) => {
-    const ok = await service.respond(idOf(req.params.id), false);
+    const ok = await service.respond(idOf(req.params.id), getActor(res).id, false);
     if (!ok) throw new AppError(404, 'NOT_FOUND', 'Page not found');
     res.json({ status: 'DECLINED' });
   });

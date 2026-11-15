@@ -61,7 +61,10 @@ export function voiceRoutes(deps: VoiceRouteDeps, guards: AuthGuards): Router {
       const actor = getActor(res);
       const owner = await deps.voice.sessionOwner(sessionId);
       if (!owner) throw new AppError(404, 'NOT_FOUND', 'Session not found');
-      if (owner.patientId && owner.patientId !== actor.id)
+      // Fail closed: a patient-authenticated turn must be on that patient's own
+      // session. IVR sessions (patientId null) are driven through the telephony
+      // webhook channel, never this route.
+      if (owner.patientId !== actor.id)
         throw new AppError(403, 'FORBIDDEN', 'This session belongs to another patient');
 
       const demoTranscript = req.get('x-demo-transcript') ?? undefined;

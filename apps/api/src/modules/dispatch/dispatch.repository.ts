@@ -14,6 +14,11 @@ export interface DispatchRepository {
     attemptNo: number;
   }): Promise<string>;
   setStatus(attemptId: string, status: DispatchStatus): Promise<boolean>;
+  /**
+   * The paged doctor accepts/declines. Scoped to that doctor and to a still-open
+   * (SENT) page, so one doctor can't respond to another doctor's page (IDOR).
+   */
+  respond(attemptId: string, doctorId: string, status: 'ACCEPTED' | 'DECLINED'): Promise<boolean>;
   countAttempts(triageResultId: string): Promise<number>;
   /** Doctor's phone for paging (private; from the users table, never sent to patients). */
   doctorPhone(doctorId: string): Promise<string | null>;
@@ -35,6 +40,20 @@ export function createDispatchRepository(db: Database): DispatchRepository {
         .update(dispatchAttempts)
         .set({ status, respondedAt: status === 'SENT' ? null : new Date() })
         .where(eq(dispatchAttempts.id, attemptId))
+        .returning({ id: dispatchAttempts.id });
+      return rows.length === 1;
+    },
+    async respond(attemptId, doctorId, status) {
+      const rows = await db
+        .update(dispatchAttempts)
+        .set({ status, respondedAt: new Date() })
+        .where(
+          and(
+            eq(dispatchAttempts.id, attemptId),
+            eq(dispatchAttempts.doctorId, doctorId),
+            eq(dispatchAttempts.status, 'SENT'),
+          ),
+        )
         .returning({ id: dispatchAttempts.id });
       return rows.length === 1;
     },

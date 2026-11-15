@@ -52,9 +52,9 @@ export function createDispatchService(deps: DispatchServiceDeps) {
       return { attemptId, channel };
     },
 
-    /** Doctor accepted or declined (IVR keypress or a tap in the doctor app). */
-    async respond(attemptId: string, accepted: boolean): Promise<boolean> {
-      return deps.repo.setStatus(attemptId, accepted ? 'ACCEPTED' : 'DECLINED');
+    /** The paged doctor accepts or declines their own page (scoped to that doctor). */
+    async respond(attemptId: string, doctorId: string, accepted: boolean): Promise<boolean> {
+      return deps.repo.respond(attemptId, doctorId, accepted ? 'ACCEPTED' : 'DECLINED');
     },
 
     attemptsSoFar(triageResultId: string): Promise<number> {
