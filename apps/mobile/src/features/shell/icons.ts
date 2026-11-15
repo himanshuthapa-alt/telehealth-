@@ -32,4 +32,8 @@ export const ICONS = {
   play: icon('play_circle', 'play.circle'),
   stop: icon('stop_circle', 'stop.circle'),
   person: icon('person', 'person'),
+  mic: icon('mic', 'mic.fill'),
+  speaker: icon('volume_up', 'speaker.wave.2.fill'),
+  call: icon('call', 'phone.fill'),
+  emergency: icon('emergency', 'cross.case.fill'),
 } as const;

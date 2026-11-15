@@ -4,6 +4,9 @@ import { createApp, type AppDeps } from '../src/app';
 import { createDatabase, type DatabaseHandle } from '../src/platform/db/client';
 import { createLogger } from '../src/platform/logger';
 import { createFakeVideoProvider } from '../src/modules/consultations/video';
+import { createFakeStt } from '../src/modules/voice/stt';
+import { createNoAudioTts } from '../src/modules/voice/tts';
+import { createFakeTriageLlm } from '../src/modules/triage/triage-llm';
 
 /** Starts an app on a random port for a test and returns its base URL + a close function. */
 export async function listen(app: Express): Promise<{ url: string; close: () => Promise<void> }> {
@@ -43,6 +46,15 @@ export function testApp(overrides: Partial<AppDeps> = {}) {
     jwtSecret: TEST_JWT_SECRET,
     resetCodeDelivery: { send: async (phone, code) => void sentCodes.set(phone, code) },
     video: createFakeVideoProvider(),
+    voice: {
+      stt: createFakeStt(),
+      tts: createNoAudioTts('fake'),
+      llm: createFakeTriageLlm(),
+      fallback: createFakeTriageLlm(),
+      telephony: null,
+    },
+    voiceRetentionHours: 0,
+    triagePromptVersion: 'test',
     ...overrides,
   });
   return { app, sentCodes };

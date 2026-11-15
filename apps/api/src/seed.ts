@@ -7,6 +7,7 @@ import { medicines, pharmacies } from './modules/pharmacy/pharmacy.schema';
 import { createScheduleRepository } from './modules/scheduling/scheduling.repository';
 import { SEED_DOCTORS, SEED_HOURS } from './seed-doctors';
 import { SEED_MEDICINES, SEED_PHARMACY } from './seed-medicines';
+import { seedTriage } from './seed-triage';
 import { eq } from 'drizzle-orm';
 
 /** Demo accounts, one per role. Doctors and pharmacy staff can't self-register, so they come from here. */
@@ -94,6 +95,13 @@ try {
   console.log(
     `pharmacy: ${pharmacy.name}, catalog ${stocked.length === 0 ? `added (${SEED_MEDICINES.length} medicines)` : 'already there'}`,
   );
+  // Voice triage: symptom vocabulary + routing, and a few on-call doctors.
+  const triage = await seedTriage(database.db);
+  // eslint-disable-next-line no-console -- CLI output
+  console.log(
+    `triage vocabulary: ${triage.tags} tags, ${triage.routes} routes added; ${triage.onCall} doctors set on-call`,
+  );
+
   // eslint-disable-next-line no-console -- CLI output
   console.log(`Password for all demo accounts: ${SEED_PASSWORD}`);
 } finally {

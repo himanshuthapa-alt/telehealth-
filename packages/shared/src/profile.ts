@@ -13,6 +13,9 @@ export const LANGUAGES = [
   'Malayalam',
   'Punjabi',
   'Assamese',
+  // Voice-first rollout (Uttarakhand): Garhwali is understood as "close to Hindi"
+  // for speech, replied to with recorded native-speaker prompts. See modules/language.
+  'Garhwali',
 ] as const;
 export type Language = (typeof LANGUAGES)[number];
 

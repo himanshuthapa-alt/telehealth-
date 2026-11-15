@@ -1,5 +1,6 @@
 import { createApp, type SweepConsultations } from './app';
 import { createFakeVideoProvider } from './modules/consultations/video';
+import { buildVoiceProviders } from './modules/voice/providers';
 import { loadConfig } from './config/env';
 import { createDatabase } from './platform/db/client';
 import { createLogger } from './platform/logger';
@@ -36,6 +37,16 @@ const app = createApp({
   resetCodeDelivery: createLogResetCodeDelivery(logger),
   // ponytail: no real video vendor yet (needs an account + a native app build); see docs/ARCHITECTURE.md
   video: config.VIDEO_PROVIDER === 'fake' ? createFakeVideoProvider() : null,
+  // Voice stack. Defaults to fake adapters (no keys, no cost); set STT/LLM/TTS providers to go live.
+  voice: buildVoiceProviders(config, logger),
+  voiceRetentionHours: config.VOICE_AUDIO_RETENTION_HOURS,
+  triagePromptVersion: config.TRIAGE_PROMPT_VERSION,
+});
+logger.info('voice stack', {
+  stt: config.STT_PROVIDER,
+  llm: config.LLM_PROVIDER,
+  tts: config.TTS_PROVIDER,
+  telephony: config.TELEPHONY_PROVIDER,
 });
 
 // Close consultations whose join window has passed.

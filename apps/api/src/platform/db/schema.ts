@@ -9,3 +9,6 @@ export * from '../../modules/appointments/appointments.schema';
 export * from '../../modules/consultations/consultations.schema';
 export * from '../../modules/pharmacy/pharmacy.schema';
 export * from '../../modules/prescriptions/prescriptions.schema';
+export * from '../../modules/voice/voice.schema';
+export * from '../../modules/triage/triage.schema';
+export * from '../../modules/dispatch/dispatch.schema';
