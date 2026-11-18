@@ -34,6 +34,11 @@ import { medicineRoutes } from './modules/pharmacy/medicines.routes';
 import { createPrescriptionRepository } from './modules/prescriptions/prescriptions.repository';
 import { prescriptionRoutes } from './modules/prescriptions/prescriptions.routes';
 import { createPrescriptionService } from './modules/prescriptions/prescriptions.service';
+import { createOrderRepository } from './modules/orders/orders.repository';
+import { createOrderService } from './modules/orders/orders.service';
+import { orderRoutes } from './modules/orders/orders.routes';
+import { createTriageService } from './modules/triage/triage.service';
+import { triageRoutes } from './modules/triage/triage.routes';
 import { addDays, istInstant } from '@telecare/shared';
 
 export interface AppDeps {
@@ -47,6 +52,8 @@ export interface AppDeps {
   now?: () => Date;
   /** null = consultations run in chat only. */
   video: VideoProvider | null;
+  groqApiKey?: string;
+  triageModel?: string;
 }
 
 /**
@@ -110,10 +117,11 @@ export function createApp(deps: AppDeps) {
   app.use(consultationRoutes(consultationService, guards));
   const catalog = createMedicineCatalog(deps.db);
   app.use(medicineRoutes(catalog, guards));
+  const prescriptionRepo = createPrescriptionRepository(deps.db, now);
   app.use(
     prescriptionRoutes(
       createPrescriptionService({
-        repo: createPrescriptionRepository(deps.db, now),
+        repo: prescriptionRepo,
         consultations: consultationService,
         catalog,
         audit: createAuditLog(deps.db),
@@ -130,6 +138,18 @@ export function createApp(deps: AppDeps) {
       guards,
     ),
   );
+  const orderService = createOrderService({
+    repo: createOrderRepository(deps.db),
+    prescriptions: prescriptionRepo,
+    audit: createAuditLog(deps.db),
+    now,
+  });
+  app.use(orderRoutes(orderService, guards));
+  const triageService = createTriageService({
+    groqApiKey: deps.groqApiKey,
+    modelName: deps.triageModel,
+  });
+  app.use(triageRoutes(triageService));
 
   app.use(notFoundHandler);
   app.use(errorHandler(deps.logger));

@@ -1,8 +1,8 @@
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { PrescriptionView } from '@/features/prescriptions/PrescriptionView';
 import { usePrescription } from '@/features/prescriptions/prescription-queries';
 import { ICONS } from '@/features/shell/icons';
-import { AppText, Button, QueryState, Screen, Skeleton } from '@/ui';
+import { Button, QueryState, Screen, Skeleton } from '@/ui';
 
 export default function PatientPrescription() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -14,18 +14,16 @@ export default function PatientPrescription() {
           <>
             <PrescriptionView prescription={p} />
             {p.status === 'ISSUED' && (
-              <>
-                {/* Phase 8 turns this into the order builder. */}
-                <Button
-                  label="Order these medicines"
-                  icon={ICONS.medicines}
-                  disabled
-                  onPress={() => undefined}
-                />
-                <AppText color="textMuted" style={{ textAlign: 'center' }}>
-                  Ordering from the TeleCare+ pharmacy opens in the next update.
-                </AppText>
-              </>
+              <Button
+                label="Order these medicines"
+                icon={ICONS.medicines}
+                onPress={() =>
+                  router.push({
+                    pathname: '/patient/medicines/order-builder',
+                    params: { prescriptionId: p.id },
+                  })
+                }
+              />
             )}
           </>
         )}

@@ -10,6 +10,10 @@ const EnvSchema = z.object({
   /** fake = rooms and tokens without real media (demos, tests); none = chat-only consultations. */
   VIDEO_PROVIDER: z.enum(['fake', 'none']).default('fake'),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error', 'silent']).default('info'),
+  /** Groq API Key for Whisper STT and gpt-oss-120b triage routing (optional). */
+  GROQ_API_KEY: z.string().optional(),
+  /** Model for triage symptom classification (defaults to gpt-oss-120b). */
+  TRIAGE_MODEL: z.string().default('gpt-oss-120b'),
 });
 
 export type Config = z.infer<typeof EnvSchema>;

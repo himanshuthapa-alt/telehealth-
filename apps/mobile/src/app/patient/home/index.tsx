@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { SPECIALIZATIONS, canJoinNow } from '@telecare/shared';
@@ -7,6 +8,7 @@ import { useAppointments } from '@/features/appointments/appointment-queries';
 import { openRoom } from '@/features/consultation/JoinButton';
 import { SPECIALTY } from '@/features/doctors/specialties';
 import { ICONS } from '@/features/shell/icons';
+import { BoloAssistantModal } from '@/features/triage/BoloAssistantModal';
 import { useSession } from '@/lib/api';
 import { useNow } from '@/lib/use-now';
 import { AppText, Button, Card, Icon, Screen, Tile, TileGrid, colors, radius, spacing } from '@/ui';
@@ -37,6 +39,7 @@ export default function Home() {
   const next = upcoming.data?.[0];
   const now = useNow();
   const firstName = state.status === 'signedIn' ? state.user.fullName.split(' ')[0] : '';
+  const [boloVisible, setBoloVisible] = useState(false);
   const findDoctor = (specialization?: string) =>
     router.navigate({ pathname: '/patient/doctors', params: specialization ? { specialization } : {} });
 
@@ -68,6 +71,13 @@ export default function Home() {
         variant={next && canJoinNow(next, now) ? 'secondary' : 'primary'}
         icon={ICONS.search}
         onPress={() => findDoctor()}
+      />
+
+      <Button
+        label="बोलो / Bolo — Voice Doctor Search"
+        variant="secondary"
+        icon={ICONS.mic}
+        onPress={() => setBoloVisible(true)}
       />
 
       <View style={styles.section}>
@@ -117,6 +127,8 @@ export default function Home() {
           />
         </Card>
       )}
+
+      <BoloAssistantModal visible={boloVisible} onClose={() => setBoloVisible(false)} />
     </Screen>
   );
 }

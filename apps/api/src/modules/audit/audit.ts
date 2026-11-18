@@ -19,7 +19,10 @@ export type AuditAction =
   | 'CONSULTATION_STARTED'
   | 'CONSULTATION_ENDED'
   | 'PRESCRIPTION_ISSUED'
-  | 'PRESCRIPTION_VOIDED';
+  | 'PRESCRIPTION_VOIDED'
+  | 'ORDER_CREATED'
+  | 'ORDER_STATUS_CHANGED'
+  | 'ORDER_CANCELLED';
 
 export interface AuditEntry {
   actorId?: string | null;

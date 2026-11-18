@@ -6,6 +6,8 @@ export default function Layout() {
     <Stack screenOptions={stackScreenOptions}>
       <Stack.Screen name="index" options={{ title: 'Medicines' }} />
       <Stack.Screen name="prescription/[id]" options={{ title: 'Prescription' }} />
+      <Stack.Screen name="order-builder" options={{ title: 'Order Medicines' }} />
+      <Stack.Screen name="order/[id]" options={{ title: 'Order & Tracking' }} />
     </Stack>
   );
 }

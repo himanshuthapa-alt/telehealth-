@@ -11,7 +11,8 @@ The full requirements, roles, flows and MVP scope are in [BLUEPRINT.md](BLUEPRIN
 | Appointment booking                       | 5     | ✅ Done                                              |
 | Consultation (video + chat)               | 6     | ✅ Chat + lifecycle; real video deferred (demo mode) |
 | Digital prescription                      | 7     | ✅ Done                                              |
-| Pharmacy orders and tracking              | 8     | ⬜                                                   |
+| Voice & symptom triage (Bolo demo)        | 7.5   | ✅ Done (Emergency red-flags, Bolo mic & routing)    |
+| Pharmacy orders and tracking              | 8     | ✅ Done (Order builder, COD, tracking ID & timeline, pharmacy queue) |
 
 ## Moved out of their planned phase
 
