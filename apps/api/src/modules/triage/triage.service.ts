@@ -7,10 +7,21 @@ import {
   type TriageResult,
   type TriageUrgency,
 } from '@telecare/shared';
+import { AppError } from '../../platform/http/errors';
+import { createRequestBudget, type RequestBudget } from '../../platform/providers/request-budget';
 
 export interface TriageRouterDeps {
   groqApiKey?: string;
   modelName?: string;
+  whisperModel?: string;
+  externalServicesMode?: 'test' | 'live';
+  groqBudget?: RequestBudget;
+}
+
+export interface AudioTranscriptionInput {
+  buffer: Uint8Array;
+  mimeType: string;
+  filename: string;
 }
 
 /**
@@ -164,7 +175,82 @@ export function classifySymptomsRuleBased(symptoms: string): {
 }
 
 export function createTriageService(deps: TriageRouterDeps = {}) {
+  const groqBudget = deps.groqBudget ?? createRequestBudget({ dailyLimit: 300, warningRatio: 0.8 });
   return {
+    async transcribe(
+      input: AudioTranscriptionInput,
+    ): Promise<{ text: string; language: string | null; confidence: number }> {
+      if (deps.externalServicesMode !== 'live') {
+        throw new AppError(
+          503,
+          'SERVICE_UNAVAILABLE',
+          'Speech transcription is disabled in external-services test mode.',
+        );
+      }
+      if (!deps.groqApiKey) {
+        throw new AppError(
+          503,
+          'SERVICE_UNAVAILABLE',
+          'Speech transcription is not configured on this server.',
+        );
+      }
+      if (!groqBudget.reserve()) {
+        throw new AppError(
+          429,
+          'RATE_LIMITED',
+          'The daily speech-service request budget has been reached. Try again tomorrow.',
+        );
+      }
+
+      const form = new FormData();
+      const bytes = Uint8Array.from(input.buffer);
+      form.append('file', new Blob([bytes], { type: input.mimeType }), input.filename);
+      form.append('model', deps.whisperModel ?? 'whisper-large-v3-turbo');
+      form.append('response_format', 'verbose_json');
+
+      let response: Response;
+      try {
+        response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${deps.groqApiKey}` },
+          body: form,
+          signal: AbortSignal.timeout(30_000),
+        });
+      } catch {
+        throw new AppError(503, 'SERVICE_UNAVAILABLE', 'Speech transcription is temporarily unavailable.');
+      }
+
+      if (!response.ok) {
+        throw new AppError(503, 'SERVICE_UNAVAILABLE', 'Speech transcription is temporarily unavailable.');
+      }
+
+      const payload = (await response.json().catch(() => null)) as {
+        text?: unknown;
+        language?: unknown;
+        segments?: Array<{ avg_logprob?: unknown; no_speech_prob?: unknown }>;
+      } | null;
+      const text = typeof payload?.text === 'string' ? payload.text.trim() : '';
+      if (!text)
+        throw new AppError(422, 'VALIDATION_FAILED', 'No clear speech was detected. Please try again.');
+
+      const segments = payload?.segments?.filter(
+        (segment) => typeof segment.avg_logprob === 'number' && typeof segment.no_speech_prob === 'number',
+      );
+      const confidence = segments?.length
+        ? segments.reduce(
+            (sum, segment) =>
+              sum + Math.exp(segment.avg_logprob as number) * (1 - (segment.no_speech_prob as number)),
+            0,
+          ) / segments.length
+        : 0;
+
+      return {
+        text: text.slice(0, 1000),
+        language: typeof payload?.language === 'string' ? payload.language : null,
+        confidence: Number.isFinite(confidence) ? Math.max(0, Math.min(1, confidence)) : 0,
+      };
+    },
+
     async triage(request: TriageRequest): Promise<TriageResult> {
       const symptoms = request.symptoms.trim();
 
@@ -181,9 +267,9 @@ export function createTriageService(deps: TriageRouterDeps = {}) {
       }
 
       // Step 2: Try LLM routing if Groq API key is present, else rule-based
-      if (deps.groqApiKey) {
+      if (deps.groqApiKey && deps.externalServicesMode === 'live' && groqBudget.reserve()) {
         try {
-          const model = deps.modelName ?? 'gpt-oss-120b';
+          const model = deps.modelName ?? 'openai/gpt-oss-120b';
           const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -201,7 +287,10 @@ export function createTriageService(deps: TriageRouterDeps = {}) {
                     'Your job is strictly to classify symptoms into a recommended doctor specialty and urgency level.\n' +
                     'Allowed specializations: ["General Physician", "Pediatrics", "Gynecology", "Dermatology", "Orthopedics", "ENT", "Cardiology", "Psychiatry"].\n' +
                     'Allowed urgency levels: ["URGENT", "ROUTINE"].\n' +
-                    'Respond ONLY with valid JSON having the shape: {"specialization": string, "urgency": "URGENT"|"ROUTINE", "summary": string}',
+                    'Also identify the language used: English, Hindi, Hinglish, Garhwali, or uncertain. ' +
+                    'Use Garhwali only when its distinct vocabulary is clear, not just because speech is from India. ' +
+                    'Return languageConfidence as a cautious number from 0 to 1; do not guess when uncertain. ' +
+                    'Respond ONLY with valid JSON having the shape: {"specialization": string, "urgency": "URGENT"|"ROUTINE", "summary": string, "language": "English"|"Hindi"|"Hinglish"|"Garhwali"|"uncertain", "languageConfidence": number}',
                 },
                 {
                   role: 'user',
@@ -210,6 +299,7 @@ export function createTriageService(deps: TriageRouterDeps = {}) {
               ],
               response_format: { type: 'json_object' },
               temperature: 0.1,
+              max_completion_tokens: 256,
             }),
           });
 
@@ -218,13 +308,36 @@ export function createTriageService(deps: TriageRouterDeps = {}) {
               choices: Array<{ message: { content: string } }>;
             };
             const parsed = JSON.parse(data.choices[0]?.message?.content || '{}');
-            if (parsed.specialization && parsed.urgency) {
+            const validSpecialization =
+              typeof parsed.specialization === 'string' &&
+              [
+                'General Physician',
+                'Pediatrics',
+                'Gynecology',
+                'Dermatology',
+                'Orthopedics',
+                'ENT',
+                'Cardiology',
+                'Psychiatry',
+              ].includes(parsed.specialization);
+            const validUrgency = parsed.urgency === 'URGENT' || parsed.urgency === 'ROUTINE';
+            if (validSpecialization && validUrgency) {
+              const language = ['English', 'Hindi', 'Hinglish', 'Garhwali', 'uncertain'].includes(
+                parsed.language,
+              )
+                ? parsed.language.toLowerCase()
+                : 'uncertain';
+              const languageConfidence =
+                typeof parsed.languageConfidence === 'number' && Number.isFinite(parsed.languageConfidence)
+                  ? Math.max(0, Math.min(1, parsed.languageConfidence))
+                  : 0;
               return {
                 urgency: parsed.urgency,
                 recommendedSpecialization: parsed.specialization,
                 summary: parsed.summary || symptoms,
                 disclaimer: TRIAGE_DISCLAIMER,
-                detectedLanguage: request.language ?? 'auto',
+                detectedLanguage: language,
+                languageConfidence,
               };
             }
           }

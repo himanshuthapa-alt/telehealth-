@@ -1,74 +1,270 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Linking, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Crypto from 'expo-crypto';
+import {
+  AudioModule,
+  RecordingPresets,
+  setAudioModeAsync,
+  useAudioRecorder,
+  useAudioRecorderState,
+} from 'expo-audio';
+import * as Speech from 'expo-speech';
 import { SPOKEN_DISCLAIMER_HI, TRIAGE_DISCLAIMER, type TriageResult } from '@telecare/shared';
 import { ICONS } from '@/features/shell/icons';
 import { SPECIALTY } from '@/features/doctors/specialties';
-import { triageSymptoms } from './triage-api';
+import { transcribeAudio, triageSymptoms } from './triage-api';
+import {
+  resolveVoiceLanguage,
+  savedVoiceLanguage,
+  VOICE_LANGUAGES,
+  type VoiceLanguage,
+} from './voice-language';
+import { speakWithFallback } from './speech-output';
+import { activeUrgentRequestKey, cancelUrgentRequest, createUrgentRequest } from './urgent-api';
+import { useUrgentRequest } from './urgent-queries';
 import { AppText, Banner, Button, Card, Icon, TextField, colors, radius, spacing } from '@/ui';
 
+const VOICE_LANGUAGE_KEY = 'telecare.voice-language';
+
 const SAMPLE_SYMPTOMS = [
-  { label: 'Chest pain & sweating 🚨', text: 'Severe chest pain and sweating' },
-  { label: '2-year child fever 👶', text: 'Baby has high fever and is crying' },
-  { label: 'Red itchy skin rash 🩹', text: 'Itchy red rash on skin with small bumps' },
-  { label: 'Ear & throat pain 👂', text: 'Severe earache and throat pain' },
-  { label: 'Knee joint pain 🦵', text: 'Knee joint pain when walking' },
-  { label: 'Fever & cold 2 days 🌡️', text: 'Fever and body ache for past 2 days' },
-  { label: 'Hindi: छाती में तेज दर्द 🚨', text: 'chaati me tez dard aur paseena' },
-  { label: 'Garhwali: छाती पीड़ा 🚨', text: 'chhati peeda bhot tezi se' },
+  { label: 'Chest pain and sweating', text: 'Severe chest pain and sweating' },
+  { label: 'Child with fever', text: 'Baby has high fever and is crying' },
+  { label: 'Itchy skin rash', text: 'Itchy red rash on skin with small bumps' },
+  { label: 'Ear and throat pain', text: 'Severe earache and throat pain' },
+  { label: 'Knee joint pain', text: 'Knee joint pain when walking' },
+  { label: 'Fever and cold', text: 'Fever and body ache for past 2 days' },
+  { label: 'Hinglish example', text: 'chaati me tez dard aur paseena' },
+  { label: 'Garhwali example', text: 'chhati peeda bhot tezi se' },
 ];
 
 export interface BoloAssistantModalProps {
+  patientId: string;
   visible: boolean;
   onClose: () => void;
 }
 
-export function BoloAssistantModal({ visible, onClose }: BoloAssistantModalProps) {
+export function BoloAssistantModal({ patientId, visible, onClose }: BoloAssistantModalProps) {
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorderState = useAudioRecorderState(recorder);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<TriageResult | null>(null);
-  const [isListening, setIsListening] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [savedLanguage, setSavedLanguage] = useState<VoiceLanguage | null>(null);
+  const [responseLanguage, setResponseLanguage] = useState<VoiceLanguage | null>(null);
+  const [askLanguage, setAskLanguage] = useState(false);
+  const [urgentRequestId, setUrgentRequestId] = useState<string | null>(null);
+  const [urgentRequestKey, setUrgentRequestKey] = useState<string | null>(null);
+  const [urgentRequestReason, setUrgentRequestReason] = useState<string | null>(null);
+  const [requestingDoctor, setRequestingDoctor] = useState(false);
+  const urgentRequestQuery = useUrgentRequest(urgentRequestId, visible);
+
+  useEffect(() => {
+    if (!visible) return;
+    let active = true;
+    void AsyncStorage.getItem(VOICE_LANGUAGE_KEY).then((value) => {
+      if (!active) return;
+      const language = value ? (VOICE_LANGUAGES.find((item) => item.id === value)?.id ?? null) : null;
+      setSavedLanguage(language);
+      setResponseLanguage(language);
+    });
+    void speakWithFallback(SPOKEN_DISCLAIMER_HI, 'hindi');
+    return () => {
+      active = false;
+      Speech.stop();
+    };
+  }, [visible]);
+
+  const speakResult = (triage: TriageResult, language: VoiceLanguage | null) => {
+    const message =
+      triage.urgency === 'EMERGENCY'
+        ? language === 'english'
+          ? 'This may be an emergency. Call 112 or 108 now. Do not wait for an online appointment.'
+          : 'यह आपात स्थिति हो सकती है। अभी 112 या 108 पर कॉल करें। ऑनलाइन अपॉइंटमेंट का इंतज़ार न करें।'
+        : language === 'english'
+          ? `Suggestion: ${SPECIALTY[triage.recommendedSpecialization]?.plain ?? triage.recommendedSpecialization}. This is not a diagnosis. Say yes to see doctors.`
+          : `सुझाव: ${SPECIALTY[triage.recommendedSpecialization]?.plain ?? triage.recommendedSpecialization}. यह निदान नहीं है। डॉक्टर देखने के लिए हाँ कहें।`;
+    Speech.stop();
+    void speakWithFallback(message, language ?? 'hindi');
+  };
+
+  const saveVoiceLanguage = (language: VoiceLanguage) => {
+    setSavedLanguage(language);
+    setResponseLanguage(language);
+    setAskLanguage(false);
+    void AsyncStorage.setItem(VOICE_LANGUAGE_KEY, language);
+    if (result) speakResult(result, language);
+  };
 
   const handleTriage = async (textToTriage?: string) => {
     const text = (textToTriage ?? input).trim();
     if (!text) return;
+    setInput(text);
+    setUrgentRequestId(null);
+    setUrgentRequestKey(null);
+    setUrgentRequestReason(null);
     setLoading(true);
+    setVoiceError(null);
     try {
       const res = await triageSymptoms({ symptoms: text });
       setResult(res);
+      setResponseLanguage(savedLanguage);
+      if (res.urgency === 'EMERGENCY') speakResult(res, savedLanguage);
+    } catch {
+      setVoiceError(
+        'We could not check those symptoms right now. Please try again or contact emergency services if this may be urgent.',
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSimulateVoice = (sampleText: string) => {
-    setInput(sampleText);
-    void handleTriage(sampleText);
+  const handleVoiceReply = (spoken: string) => {
+    const answer = spoken.toLowerCase().trim();
+    if (/^(yes|yeah|yep|haan|han|ji|हाँ|हां|जी)(\b|\s|$)/u.test(answer)) {
+      goToDoctors(result?.recommendedSpecialization ?? 'General Physician');
+    } else if (/^(no|nope|nahi|nahin|नहीं|ना)(\b|\s|$)/u.test(answer)) {
+      reset();
+    } else {
+      setVoiceError('I did not hear yes or no clearly. Please try again, or use the buttons below.');
+    }
   };
 
-  const toggleMic = () => {
-    if (isListening) {
-      setIsListening(false);
-      if (input.trim()) void handleTriage();
-    } else {
-      setIsListening(true);
-      // Simulate listening state
-      setTimeout(() => {
-        setIsListening(false);
-        if (!input.trim()) {
-          setInput('Fever, headache and cough for past 2 days');
-          void handleTriage('Fever, headache and cough for past 2 days');
-        } else {
-          void handleTriage();
-        }
-      }, 1500);
+  const handleTranscription = async (uri: string) => {
+    setLoading(true);
+    setVoiceError(null);
+    try {
+      const transcription = await transcribeAudio(uri);
+      setInput(transcription.text);
+      if (result) {
+        const spokenTriage = await triageSymptoms({
+          symptoms: transcription.text,
+          language: transcription.language ?? undefined,
+        });
+        const storedLanguage =
+          savedLanguage ?? savedVoiceLanguage(await AsyncStorage.getItem(VOICE_LANGUAGE_KEY));
+        const resolution = resolveVoiceLanguage({
+          whisperLanguage: transcription.language,
+          whisperConfidence: transcription.confidence,
+          transcript: transcription.text,
+          triage: spokenTriage,
+          savedLanguage: storedLanguage,
+        });
+        if (storedLanguage && !savedLanguage) setSavedLanguage(storedLanguage);
+        setResponseLanguage(resolution.language);
+        setAskLanguage(resolution.needsSelection);
+        handleVoiceReply(transcription.text);
+        return;
+      }
+
+      const triage = await triageSymptoms({
+        symptoms: transcription.text,
+        language: transcription.language ?? undefined,
+      });
+      setResult(triage);
+      const storedLanguage =
+        savedLanguage ?? savedVoiceLanguage(await AsyncStorage.getItem(VOICE_LANGUAGE_KEY));
+      if (storedLanguage) setSavedLanguage(storedLanguage);
+      const resolution = resolveVoiceLanguage({
+        whisperLanguage: transcription.language,
+        whisperConfidence: transcription.confidence,
+        transcript: transcription.text,
+        triage,
+        savedLanguage: storedLanguage,
+      });
+      setResponseLanguage(resolution.language);
+      setAskLanguage(resolution.needsSelection);
+      if (triage.urgency === 'EMERGENCY' || resolution.language) speakResult(triage, resolution.language);
+    } catch {
+      setVoiceError(
+        'Voice recognition needs an internet connection, EXTERNAL_SERVICES_MODE=live, and a Groq API key on the TeleCare server. You can type symptoms instead; emergency words are checked on this phone.',
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMicPress = async () => {
+    if (loading) return;
+    setVoiceError(null);
+    if (recorderState.isRecording) {
+      try {
+        await recorder.stop();
+        if (recorder.uri) await handleTranscription(recorder.uri);
+        else setVoiceError('No recording was captured. Please try again.');
+      } catch {
+        setVoiceError('The recording could not be stopped. Please try again.');
+      }
+      return;
+    }
+
+    try {
+      const permission = await AudioModule.requestRecordingPermissionsAsync();
+      if (!permission.granted) {
+        setVoiceError('Allow microphone access in your phone settings to use voice search.');
+        return;
+      }
+      await setAudioModeAsync({ playsInSilentMode: true, allowsRecording: true });
+      await recorder.prepareToRecordAsync();
+      recorder.record();
+    } catch {
+      setVoiceError('The microphone could not start. Check its permission and try again.');
     }
   };
 
   const reset = () => {
     setInput('');
     setResult(null);
-    setIsListening(false);
+    setVoiceError(null);
+    setAskLanguage(false);
+    setUrgentRequestId(null);
+    setUrgentRequestKey(null);
+    setUrgentRequestReason(null);
+    setResponseLanguage(savedLanguage);
+    Speech.stop();
+  };
+
+  const sendUrgentRequest = async () => {
+    const symptoms = input.trim();
+    if (!symptoms || !result || result.urgency !== 'URGENT' || requestingDoctor) return;
+    setRequestingDoctor(true);
+    setVoiceError(null);
+    setUrgentRequestReason(null);
+    const requestKey = urgentRequestKey ?? Crypto.randomUUID();
+    setUrgentRequestKey(requestKey);
+    const language =
+      responseLanguage === 'hindi'
+        ? 'Hindi'
+        : responseLanguage === 'garhwali'
+          ? 'Garhwali'
+          : responseLanguage === 'english'
+            ? 'English'
+            : null;
+    try {
+      const response = await createUrgentRequest(symptoms, language, requestKey);
+      setResult(response.triage);
+      if (response.triage.urgency === 'EMERGENCY') {
+        setUrgentRequestId(null);
+        setUrgentRequestKey(null);
+        speakResult(response.triage, responseLanguage);
+      } else if (response.request) {
+        setUrgentRequestId(response.request.id);
+        await AsyncStorage.setItem(activeUrgentRequestKey(patientId), response.request.id);
+        setUrgentRequestKey(null);
+        setUrgentRequestReason(null);
+      } else {
+        setUrgentRequestKey(null);
+        setUrgentRequestReason(response.reason ?? 'An on-call doctor is not available right now.');
+      }
+    } catch {
+      setVoiceError(
+        'We could not send the request. Check your connection, or book a regular appointment. If this may be an emergency, call 112 or 108.',
+      );
+    } finally {
+      setRequestingDoctor(false);
+    }
   };
 
   const callNumber = (phone: string) => {
@@ -95,7 +291,7 @@ export function BoloAssistantModal({ visible, onClose }: BoloAssistantModalProps
                 <Icon name={ICONS.mic} size={24} color={colors.primary} />
               </View>
               <View>
-                <AppText variant="title">Bolo / बोलो</AppText>
+                <AppText variant="title">Bolo / {'\u092c\u094b\u0932\u094b'}</AppText>
                 <AppText color="textMuted">Voice & Symptom Triage</AppText>
               </View>
             </View>
@@ -117,57 +313,82 @@ export function BoloAssistantModal({ visible, onClose }: BoloAssistantModalProps
               {TRIAGE_DISCLAIMER}
             </AppText>
 
-            {/* If no result yet: Input and Voice prompt */}
             {!result && (
               <View style={styles.inputSection}>
                 <AppText variant="heading" style={{ textAlign: 'center' }}>
-                  अपनी परेशानी बताएं / Speak your problem
+                  {
+                    '\u0905\u092a\u0928\u0940 \u092a\u0930\u0947\u0936\u093e\u0928\u0940 \u092c\u0924\u093e\u090f\u0902 / Speak your problem'
+                  }
                 </AppText>
                 <AppText color="textMuted" style={{ textAlign: 'center' }}>
                   Hindi, Hinglish, English, or Garhwali
                 </AppText>
+                <AppText variant="caption" color="textMuted" style={{ textAlign: 'center' }}>
+                  Short clips are sent to the TeleCare server and Groq for transcription, then deleted by
+                  TeleCare. If offline, type symptoms; emergency words are checked on this phone.
+                </AppText>
 
-                {/* Big Mic Button */}
                 <View style={styles.micContainer}>
                   <Pressable
-                    style={[styles.bigMicButton, isListening && styles.bigMicActive]}
-                    onPress={toggleMic}
+                    style={[styles.bigMicButton, recorderState.isRecording && styles.bigMicActive]}
+                    onPress={() => void handleMicPress()}
+                    disabled={loading}
+                    accessibilityRole="button"
+                    accessibilityLabel={recorderState.isRecording ? 'Finish recording' : 'Record symptoms'}
                   >
-                    <Icon name={ICONS.mic} size={48} color={isListening ? colors.accent : colors.surface} />
+                    <Icon
+                      name={ICONS.mic}
+                      size={48}
+                      color={recorderState.isRecording ? colors.accent : colors.surface}
+                    />
                   </Pressable>
-                  <AppText variant="label" color={isListening ? 'accent' : 'text'}>
-                    {isListening ? 'Listening… / सुन रहे हैं…' : 'Tap to Speak / बोलें'}
+                  <AppText variant="label" color={recorderState.isRecording ? 'accent' : 'text'}>
+                    {loading
+                      ? 'Transcribing\u2026'
+                      : recorderState.isRecording
+                        ? 'Tap to finish speaking'
+                        : 'Tap to speak'}
                   </AppText>
                 </View>
 
-                {/* Text fallback / manual input */}
+                <Button
+                  label="Hear offline options"
+                  variant="secondary"
+                  onPress={() =>
+                    Speech.speak(
+                      'You can type symptoms while offline. Emergency warning words are checked on this phone. For an emergency, call 112 or 108.',
+                      { language: 'en-IN' },
+                    )
+                  }
+                />
+
+                {voiceError && <AppText color="danger">{voiceError}</AppText>}
+
                 <TextField
-                  label="Or type symptoms / या लिखकर बताएं"
-                  placeholder="e.g. fever, knee pain, skin rash..."
+                  label="Or type symptoms"
+                  placeholder="For example: fever, knee pain, skin rash"
                   value={input}
                   onChangeText={setInput}
                   returnKeyType="done"
-                  onSubmitEditing={() => handleTriage()}
+                  onSubmitEditing={() => void handleTriage()}
                 />
-
                 <Button
-                  label={loading ? 'Checking…' : 'Find Doctor by Symptoms'}
+                  label={loading ? 'Checking?' : 'Find doctor by symptoms'}
                   icon={ICONS.search}
                   disabled={!input.trim() || loading}
-                  onPress={() => handleTriage()}
+                  onPress={() => void handleTriage()}
                 />
 
-                {/* Quick test chips */}
                 <View style={styles.chipSection}>
                   <AppText variant="caption" color="textMuted">
-                    Quick test symptoms (Try any problem):
+                    Sample symptoms:
                   </AppText>
                   <View style={styles.chipRow}>
                     {SAMPLE_SYMPTOMS.map((sample) => (
                       <Pressable
                         key={sample.label}
                         style={styles.sampleChip}
-                        onPress={() => handleSimulateVoice(sample.text)}
+                        onPress={() => void handleTriage(sample.text)}
                       >
                         <AppText variant="caption" style={{ fontWeight: '600' }}>
                           {sample.label}
@@ -185,7 +406,10 @@ export function BoloAssistantModal({ visible, onClose }: BoloAssistantModalProps
                 <View style={styles.emergencyHeader}>
                   <Icon name={ICONS.warning} size={32} color={colors.danger} />
                   <AppText variant="heading" color="danger">
-                    EMERGENCY / आपातकालीन चेतावनी
+                    EMERGENCY /{' '}
+                    {
+                      '\u0906\u092a\u093e\u0924\u0915\u093e\u0932\u0940\u0928 \u091a\u0947\u0924\u093e\u0935\u0928\u0940'
+                    }
                   </AppText>
                 </View>
                 <AppText style={styles.emergencyNotice}>
@@ -245,7 +469,96 @@ export function BoloAssistantModal({ visible, onClose }: BoloAssistantModalProps
 
                 <Banner tone="info" message={result.disclaimer} />
 
+                {askLanguage && (
+                  <View style={styles.languagePicker}>
+                    <AppText variant="label">Which language do you prefer for spoken replies?</AppText>
+                    <AppText variant="caption" color="textMuted">
+                      We could not confirm the language confidently. Your choice is saved on this phone.
+                    </AppText>
+                    <View style={styles.languageOptions}>
+                      {VOICE_LANGUAGES.map((language) => (
+                        <Pressable
+                          key={language.id}
+                          style={styles.languageChip}
+                          onPress={() => saveVoiceLanguage(language.id)}
+                        >
+                          <AppText variant="caption">{language.label}</AppText>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {voiceError && <AppText color="danger">{voiceError}</AppText>}
+                {urgentRequestReason && <Banner tone="warning" message={urgentRequestReason} />}
+                {result.urgency === 'URGENT' &&
+                  (!urgentRequestId ||
+                    urgentRequestQuery.data?.status === 'EXHAUSTED' ||
+                    urgentRequestQuery.data?.status === 'CANCELLED') && (
+                    <Button
+                      label={
+                        requestingDoctor ? 'Sending request…' : 'Send urgent request to an on-call doctor'
+                      }
+                      icon={ICONS.doctor}
+                      loading={requestingDoctor}
+                      disabled={requestingDoctor || loading}
+                      onPress={() => void sendUrgentRequest()}
+                    />
+                  )}
+                {urgentRequestId && (
+                  <Card style={styles.urgentStatusCard}>
+                    <AppText variant="label">Urgent doctor request</AppText>
+                    {!urgentRequestQuery.data ? (
+                      <AppText color="textMuted">Loading request status…</AppText>
+                    ) : urgentRequestQuery.data.status === 'PENDING' ? (
+                      <>
+                        <AppText>
+                          A request is waiting in the on-call doctor inbox. No phone call has been placed.
+                        </AppText>
+                        <AppText variant="caption" color="textMuted">
+                          If symptoms worsen or you think this is an emergency, call 112 or 108 now.
+                        </AppText>
+                        <Button
+                          label="Cancel request"
+                          variant="secondary"
+                          onPress={() => {
+                            void cancelUrgentRequest(urgentRequestId)
+                              .then(() => urgentRequestQuery.refetch())
+                              .catch(() =>
+                                setVoiceError('The request could not be cancelled. Please try again.'),
+                              );
+                          }}
+                        />
+                      </>
+                    ) : urgentRequestQuery.data.status === 'ACCEPTED' ? (
+                      <AppText>
+                        A doctor accepted the request. Masked phone calls are not configured in this build, so
+                        no callback was placed. Use a regular booking to arrange contact through the app.
+                      </AppText>
+                    ) : urgentRequestQuery.data.status === 'EXHAUSTED' ? (
+                      <AppText>
+                        No on-call doctor accepted in time. Please book a regular appointment. For emergency
+                        symptoms, call 112 or 108.
+                      </AppText>
+                    ) : (
+                      <AppText>This request was cancelled.</AppText>
+                    )}
+                  </Card>
+                )}
+                <Button
+                  label="Hear suggestion again"
+                  variant="secondary"
+                  onPress={() => speakResult(result, responseLanguage)}
+                />
+
                 <View style={styles.actionRow}>
+                  <Button
+                    label={recorderState.isRecording ? 'Finish saying yes or no' : 'Say yes or no'}
+                    icon={ICONS.mic}
+                    variant="secondary"
+                    onPress={() => void handleMicPress()}
+                    disabled={loading}
+                  />
                   <Button
                     label={`Yes, show ${SPECIALTY[result.recommendedSpecialization]?.plain ?? 'Doctors'}`}
                     icon={ICONS.doctor}
@@ -375,6 +688,10 @@ const styles = StyleSheet.create({
     borderColor: colors.accent,
     borderWidth: 2,
   },
+  urgentStatusCard: {
+    borderColor: colors.warning,
+    borderWidth: 1,
+  },
   urgencyBadge: {
     alignSelf: 'flex-start',
   },
@@ -402,5 +719,24 @@ const styles = StyleSheet.create({
   actionRow: {
     gap: spacing.sm,
     marginTop: spacing.xs,
+  },
+  languagePicker: {
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+  },
+  languageOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  languageChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    backgroundColor: colors.background,
   },
 });

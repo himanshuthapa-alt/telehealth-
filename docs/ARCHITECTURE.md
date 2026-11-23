@@ -47,3 +47,7 @@ apps/mobile (Expo) ──HTTP/JSON──▶ apps/api (Express) ──▶ Postgre
 ## Video
 
 Everything talks to the `VideoProvider` interface (`createRoom`, `issueJoinToken`, `endRoom`) on the server and one `VideoPanel` component in the app (blueprint §13.2). Today `VIDEO_PROVIDER` is `fake` (rooms and tokens, no media; the app says "Video demo mode") or `none` (chat-only). A real vendor (Agora, ZEGOCLOUD or LiveKit) is one more server adapter plus the vendor's client component inside `VideoPanel`, and it needs a native development build of the app, because Expo Go can't load native video code.
+
+## Urgent requests and voice services
+
+Bolo can capture a short clip, send it to Groq Whisper in live mode, run the emergency keyword check before AI routing, and read the result through a configured Google or Sarvam voice with device TTS fallback. Provider calls are disabled in test mode. The API stores urgent symptom text for the assigned doctor but keeps uploaded audio in memory only. On-call doctors receive a polling inbox and requests escalate after three minutes. Masked telephone callbacks, push delivery, offline request queuing, USD-spend alerts and verified Garhwali recordings still need implementation or provider setup. Groq has a process-local daily request cap and log warning; hosted speech also has per-IP rate limits.
