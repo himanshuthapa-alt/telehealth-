@@ -22,6 +22,7 @@ npm run db:migrate
 npm run db:seed      # demo patient, doctor and pharmacy accounts
 npm run dev:api      # http://localhost:4000/health
 npm run dev:mobile   # Expo Go QR code, Android emulator, or press "w" for web
+npm run dev:android  # open Android emulator explicitly in Expo Go
 npm run dev:web      # open the web app directly in a browser
 npm run build:web    # export the production web app to apps/mobile/dist
 npm run check        # format + lint + typecheck + all tests

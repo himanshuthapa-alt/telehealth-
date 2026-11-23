@@ -5,9 +5,9 @@
 | Script                | Does                                                                                       |
 | --------------------- | ------------------------------------------------------------------------------------------ |
 | `npm run dev:api`     | API with reload (`tsx watch`)                                                              |
-| `npm run dev:mobile`  | Expo dev server                                                                            |
+| `npm run dev:mobile`  | Expo Go dev server                                                                         |
 | `npm run dev:web`     | Expo dev server opened for web                                                             |
-| `npm run dev:android` | Expo dev server opened in an Android emulator                                              |
+| `npm run dev:android` | Open Android emulator explicitly in Expo Go                                                |
 | `npm run dev:ios`     | Expo dev server opened in an iOS simulator (macOS required)                                |
 | `npm run build:web`   | Export the single-page web app to `apps/mobile/dist`                                       |
 | `npm run db:up/down`  | Start / stop PostgreSQL                                                                    |
