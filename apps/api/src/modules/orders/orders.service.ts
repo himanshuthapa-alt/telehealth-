@@ -63,7 +63,11 @@ export function createOrderService({ repo, prescriptions, audit, now = () => new
           if (item.prescriptionItemId) {
             const rxItem = rx.items.find((i) => i.id === item.prescriptionItemId);
             if (!rxItem) {
-              throw new AppError(400, 'INVALID_PRESCRIPTION_ITEM', 'Prescription item not found in prescription');
+              throw new AppError(
+                400,
+                'INVALID_PRESCRIPTION_ITEM',
+                'Prescription item not found in prescription',
+              );
             }
 
             const alreadyOrdered = await repo.getOrderedQuantityForPrescriptionItem(item.prescriptionItemId);
@@ -151,7 +155,11 @@ export function createOrderService({ repo, prescriptions, audit, now = () => new
         action: 'ORDER_CREATED',
         entityType: 'ORDER',
         entityId: order.id,
-        metadata: { trackingId: order.trackingId, totalPaise: order.totalPaise, itemCount: order.items.length },
+        metadata: {
+          trackingId: order.trackingId,
+          totalPaise: order.totalPaise,
+          itemCount: order.items.length,
+        },
       });
 
       return order;
@@ -210,7 +218,11 @@ export function createOrderService({ repo, prescriptions, audit, now = () => new
       }
 
       if (request.status === 'CANCELLED' && actor.role === 'PHARMACY_ADMIN' && !request.cancelReason) {
-        throw new AppError(400, 'VALIDATION_FAILED', 'Cancel reason is required when pharmacy cancels an order');
+        throw new AppError(
+          400,
+          'VALIDATION_FAILED',
+          'Cancel reason is required when pharmacy cancels an order',
+        );
       }
 
       const updated = await repo.updateStatus({

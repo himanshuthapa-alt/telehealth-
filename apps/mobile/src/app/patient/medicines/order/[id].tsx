@@ -4,18 +4,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useOrder, useUpdateOrderStatus } from '@/features/orders/order-queries';
 import { OrderTimeline } from '@/features/orders/OrderTimeline';
 import { ICONS } from '@/features/shell/icons';
-import {
-  AppText,
-  Banner,
-  Button,
-  Card,
-  Icon,
-  QueryState,
-  Screen,
-  Skeleton,
-  colors,
-  spacing,
-} from '@/ui';
+import { AppText, Banner, Button, Card, Icon, QueryState, Screen, Skeleton, colors, spacing } from '@/ui';
 
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

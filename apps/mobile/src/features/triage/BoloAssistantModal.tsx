@@ -1,32 +1,11 @@
 import { useState } from 'react';
-import {
-  Linking,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { Linking, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import {
-  SPOKEN_DISCLAIMER_HI,
-  TRIAGE_DISCLAIMER,
-  type TriageResult,
-} from '@telecare/shared';
+import { SPOKEN_DISCLAIMER_HI, TRIAGE_DISCLAIMER, type TriageResult } from '@telecare/shared';
 import { ICONS } from '@/features/shell/icons';
 import { SPECIALTY } from '@/features/doctors/specialties';
 import { triageSymptoms } from './triage-api';
-import {
-  AppText,
-  Banner,
-  Button,
-  Card,
-  Icon,
-  TextField,
-  colors,
-  radius,
-  spacing,
-} from '@/ui';
+import { AppText, Banner, Button, Card, Icon, TextField, colors, radius, spacing } from '@/ui';
 
 const SAMPLE_SYMPTOMS = [
   { label: 'Chest pain & sweating 🚨', text: 'Severe chest pain and sweating' },
@@ -210,8 +189,8 @@ export function BoloAssistantModal({ visible, onClose }: BoloAssistantModalProps
                   </AppText>
                 </View>
                 <AppText style={styles.emergencyNotice}>
-                  Your symptoms suggest a severe medical emergency. Do not wait for an online
-                  appointment. Contact emergency services or reach the nearest hospital immediately.
+                  Your symptoms suggest a severe medical emergency. Do not wait for an online appointment.
+                  Contact emergency services or reach the nearest hospital immediately.
                 </AppText>
                 <AppText color="textMuted" style={{ fontStyle: 'italic' }}>
                   {result.summary}
@@ -252,7 +231,8 @@ export function BoloAssistantModal({ visible, onClose }: BoloAssistantModalProps
                 </View>
 
                 <AppText variant="title">
-                  Recommended: {SPECIALTY[result.recommendedSpecialization]?.plain ?? result.recommendedSpecialization}
+                  Recommended:{' '}
+                  {SPECIALTY[result.recommendedSpecialization]?.plain ?? result.recommendedSpecialization}
                 </AppText>
                 <AppText color="textMuted">Specialty: {result.recommendedSpecialization}</AppText>
 

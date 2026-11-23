@@ -130,8 +130,22 @@ const CROCKFORD_CHARS = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
  */
 export function generateTrackingId(randomBytes?: number[]): string {
   const bytes = randomBytes ?? Array.from({ length: 8 }, () => Math.floor(Math.random() * 256));
-  const segment1 = Array.from({ length: 4 }, (_, i) => CROCKFORD_CHARS[bytes[i] % CROCKFORD_CHARS.length]).join('');
-  const segment2 = Array.from({ length: 4 }, (_, i) => CROCKFORD_CHARS[bytes[i + 4] % CROCKFORD_CHARS.length]).join('');
+  if (bytes.length !== 8) {
+    throw new RangeError('Tracking ID generation requires exactly 8 bytes');
+  }
+
+  const encodeByte = (byte: number | undefined): string => {
+    if (byte === undefined || !Number.isInteger(byte) || byte < 0 || byte > 255) {
+      throw new RangeError('Tracking ID bytes must be integers from 0 to 255');
+    }
+
+    const character = CROCKFORD_CHARS[byte % CROCKFORD_CHARS.length];
+    if (character === undefined) throw new RangeError('Invalid tracking ID character index');
+    return character;
+  };
+
+  const segment1 = Array.from({ length: 4 }, (_, i) => encodeByte(bytes[i])).join('');
+  const segment2 = Array.from({ length: 4 }, (_, i) => encodeByte(bytes[i + 4])).join('');
   return `TC-${segment1}-${segment2}`;
 }
 

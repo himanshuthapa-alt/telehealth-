@@ -54,8 +54,7 @@ export default function PharmacyInventory() {
                       </AppText>
                     )}
                     <AppText color="textMuted">
-                      {m.form} {m.strength ? `· ${m.strength}` : ''}{' '}
-                      {m.packSize ? `(${m.packSize})` : ''}
+                      {m.form} {m.strength ? `· ${m.strength}` : ''} {m.packSize ? `(${m.packSize})` : ''}
                     </AppText>
                   </View>
                   <View style={styles.priceCol}>

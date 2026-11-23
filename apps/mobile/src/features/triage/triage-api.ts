@@ -21,9 +21,19 @@ function localRuleBasedFallback(symptoms: string, language?: string): TriageResu
     specialization = 'Pediatrics';
   } else if (lower.includes('rash') || lower.includes('skin') || lower.includes('khujli')) {
     specialization = 'Dermatology';
-  } else if (lower.includes('ear') || lower.includes('throat') || lower.includes('kaan') || lower.includes('gala')) {
+  } else if (
+    lower.includes('ear') ||
+    lower.includes('throat') ||
+    lower.includes('kaan') ||
+    lower.includes('gala')
+  ) {
     specialization = 'ENT';
-  } else if (lower.includes('bone') || lower.includes('joint') || lower.includes('knee') || lower.includes('haddi')) {
+  } else if (
+    lower.includes('bone') ||
+    lower.includes('joint') ||
+    lower.includes('knee') ||
+    lower.includes('haddi')
+  ) {
     specialization = 'Orthopedics';
   } else if (lower.includes('pregnant') || lower.includes('period')) {
     specialization = 'Gynecology';
