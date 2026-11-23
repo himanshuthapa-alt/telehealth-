@@ -10,6 +10,13 @@ export default function Layout() {
         options={{ title: 'Today', tabBarIcon: tabIcon({ ios: 'clock', android: 'today' }) }}
       />
       <Tabs.Screen
+        name="inbox"
+        options={{
+          title: 'Urgent inbox',
+          tabBarIcon: tabIcon({ ios: 'bell.badge', android: 'notifications_active' }),
+        }}
+      />
+      <Tabs.Screen
         name="appointments"
         options={{
           title: 'Appointments',

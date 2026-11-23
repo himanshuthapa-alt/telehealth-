@@ -11,7 +11,11 @@ The full requirements, roles, flows and MVP scope are in [BLUEPRINT.md](BLUEPRIN
 | Appointment booking                       | 5     | ✅ Done                                                              |
 | Consultation (video + chat)               | 6     | ✅ Chat + lifecycle; real video deferred (demo mode)                 |
 | Digital prescription                      | 7     | ✅ Done                                                              |
-| Voice & symptom triage (Bolo demo)        | 7.5   | ✅ Done (Emergency red-flags, Bolo mic & routing)                    |
+| Voice & symptom triage (Bolo) | 7.5 | Partial: real mic capture, Groq transcription, guarded language selection and urgent routing. Still needs configured provider accounts; offline ASR and verified Garhwali recordings are open. |
+| Urgent doctor lane | planned | Partial: doctor opt-in inbox, accept/decline, specialty and language routing, and three-minute escalation are built. Masked callbacks and push notifications need providers. |
+| Offline requests | planned | Partial: typed triage and emergency keyword checks work locally; requests are not queued for later submission. |
+| Doctor verification and partner networks | planned | Not integrated: staff doctors are provisioned; registry checks and partner referrals need verified data and agreements. |
+| Provider budget reporting | planned | Groq has a daily request cap and log warning; USD spend reporting is not integrated. |
 | Pharmacy orders and tracking              | 8     | ✅ Done (Order builder, COD, tracking ID & timeline, pharmacy queue) |
 
 ## Moved out of their planned phase

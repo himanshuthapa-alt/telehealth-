@@ -138,3 +138,20 @@ No auth. `200` when the DB answers, `503` when it doesn't.
 ```json
 { "status": "ok", "version": "0.1.0", "checks": { "database": "up" } }
 ```
+
+## Urgent doctor requests
+
+Patient triage is re-run by the API before creating a request. Emergency symptoms return emergency guidance and are never placed in this queue. Requests route only to active, opted-in doctors for the recommended specialty, with patient language ranked first where available. Pending requests escalate to the next on-call doctor after three minutes without acceptance. Request status is polled by the app; push notifications and masked callbacks are not configured.
+
+| Endpoint | Who | Notes |
+| --- | --- | --- |
+| POST /v1/urgent-requests | patient | Header Idempotency-Key (UUID); reuse it on retry. Body: symptoms and optional language. Returns the server triage result and a request when an on-call doctor is available. Rate limited to 5 requests per patient per 15 minutes. |
+| GET /v1/urgent-requests/:id | owning patient | Returns current status; another patient receives 404. |
+| POST /v1/urgent-requests/:id/cancel | owning patient | Cancels only while pending. |
+| GET /v1/doctor/on-call | doctor | Returns current on-call status. |
+| PUT /v1/doctor/on-call | doctor | Updates on-call status. Turning off routes pending requests to the next available doctor. |
+| GET /v1/doctor/urgent-requests | doctor | Pending requests assigned to this doctor. Patient phone numbers and internal patient/doctor ids are not returned. |
+| POST /v1/doctor/urgent-requests/:id/accept | assigned doctor | Accepts the pending request. |
+| POST /v1/doctor/urgent-requests/:id/decline | assigned doctor | Declines and immediately advances to the next available doctor. |
+
+The API stores the reported text for the assigned doctor; it never stores uploaded audio. Status values are PENDING, ACCEPTED, EXHAUSTED, and CANCELLED.

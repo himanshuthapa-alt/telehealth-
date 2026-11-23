@@ -13,6 +13,7 @@ export const LANGUAGES = [
   'Malayalam',
   'Punjabi',
   'Assamese',
+  'Garhwali',
 ] as const;
 export type Language = (typeof LANGUAGES)[number];
 

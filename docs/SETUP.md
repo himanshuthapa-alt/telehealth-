@@ -21,6 +21,20 @@ npm run dev:mobile                     # QR for Expo Go, "a" for Android emulato
 
 The app finds the API on the same machine that serves the JS bundle (port 4000), so it works on an emulator and on a phone on the same Wi-Fi. To point at another server set `EXPO_PUBLIC_API_URL`.
 
+## Configure Bolo voice services
+
+Third-party calls are disabled by default. To enable live voice transcription, set `EXTERNAL_SERVICES_MODE=live` and `GROQ_API_KEY` in `apps/api/.env`. Groq Whisper transcribes the short recording; the TeleCare API keeps it in memory and does not write it to disk. The phone removes its temporary recording after upload. A local phone speech engine reads prompts when hosted speech is unavailable.
+
+Groq calls share a process-local daily request cap, controlled by GROQ_DAILY_REQUEST_LIMIT (default 300); the API logs one warning at GROQ_BUDGET_WARNING_RATIO (default 0.8). This is a request-count cap, not a dollar estimate, and resets at UTC midnight or when the API restarts. Google and Sarvam speech endpoints have per-IP rate limits.
+
+Optional hosted voices use `GOOGLE_TTS_API_KEY` for Hindi WaveNet speech and `SARVAM_API_KEY` for Hinglish speech. Keep these keys only in the API environment, never in the mobile app. Bolo's language selector remembers a manually chosen spoken-reply language on that phone.
+
+In external-services test mode, mic transcription and hosted speech do not call vendors. Typed symptom routing and emergency keyword checks still work locally. Offline speech recognition is not available yet; the Bolo screen reads its offline guidance aloud and supports typed symptom entry.
+
+## Urgent doctor requests
+
+After applying migrations, sign in with a doctor account and turn on On-call availability in the new Urgent inbox tab. Demo doctors default to off-call. Requests are assigned by specialty and escalate after three minutes; the app polls for status. This build does not place masked calls or send push notifications. Accepted requests do not trigger a phone call, so use the regular appointment flow for contact until a telephony provider is configured.
+
 ## Run on web and mobile devices
 
 Start the API and database as shown above, then use one of these targets:

@@ -35,6 +35,8 @@ export const doctorProfiles = pgTable(
     registrationNumber: text(),
     isDemo: boolean().notNull().default(false),
     isActive: boolean().notNull().default(true),
+    /** Doctors explicitly opt in before receiving urgent requests. */
+    isOnCall: boolean().notNull().default(false),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
