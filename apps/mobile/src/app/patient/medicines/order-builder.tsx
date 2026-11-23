@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import type { PrescriptionItem } from '@telecare/shared';
@@ -26,35 +26,19 @@ export default function OrderBuilder() {
   const profile = usePatientProfile();
   const createOrder = useCreateOrder();
 
+  type AddressField = 'fullName' | 'phone' | 'addressLine' | 'district' | 'pincode';
+  const [addressOverrides, setAddressOverrides] = useState<Partial<Record<AddressField, string>>>({});
   const [quantities, setQuantities] = useState<Record<string, number>>({});
-  const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [addressLine, setAddressLine] = useState('');
-  const [district, setDistrict] = useState('');
-  const [pincode, setPincode] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Pre-fill profile details
-  useEffect(() => {
-    if (profile.data) {
-      if (profile.data.fullName) setFullName(profile.data.fullName);
-      if (profile.data.phone) setPhone(profile.data.phone);
-      if (profile.data.district) setDistrict(profile.data.district);
-    }
-  }, [profile.data]);
-
-  // Pre-fill quantities from prescription
-  useEffect(() => {
-    if (prescription.data) {
-      const initial: Record<string, number> = {};
-      for (const item of prescription.data.items) {
-        if (item.medicineId) {
-          initial[item.id] = item.quantity;
-        }
-      }
-      setQuantities(initial);
-    }
-  }, [prescription.data]);
+  const fullName = addressOverrides.fullName ?? profile.data?.fullName ?? '';
+  const phone = addressOverrides.phone ?? profile.data?.phone ?? '';
+  const addressLine = addressOverrides.addressLine ?? '';
+  const district = addressOverrides.district ?? profile.data?.district ?? '';
+  const pincode = addressOverrides.pincode ?? '';
+  const setAddressField = (field: AddressField, value: string) => {
+    setAddressOverrides((previous) => ({ ...previous, [field]: value }));
+  };
 
   const updateItemQty = (itemId: string, delta: number, maxQty: number) => {
     setQuantities((prev) => {
@@ -72,7 +56,7 @@ export default function OrderBuilder() {
     }
 
     const orderItems = items
-      .filter((i) => i.medicineId && (quantities[i.id] ?? 0) > 0)
+      .filter((i) => i.medicineId && (quantities[i.id] ?? i.quantity) > 0)
       .map((i) => ({
         prescriptionItemId: i.id,
         medicineId: i.medicineId!,
@@ -103,7 +87,9 @@ export default function OrderBuilder() {
         params: { id: order.id },
       });
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Failed to place order. Please check stock and try again.');
+      setErrorMsg(
+        err instanceof Error ? err.message : 'Failed to place order. Please check stock and try again.',
+      );
     }
   };
 
@@ -192,15 +178,33 @@ export default function OrderBuilder() {
                   {/* Delivery Address */}
                   <View style={styles.section}>
                     <AppText variant="heading">Delivery Address</AppText>
-                    <TextField label="Full Name" value={fullName} onChangeText={setFullName} />
-                    <TextField label="Phone Number" value={phone} keyboardType="phone-pad" onChangeText={setPhone} />
+                    <TextField
+                      label="Full Name"
+                      value={fullName}
+                      onChangeText={(value) => setAddressField('fullName', value)}
+                    />
+                    <TextField
+                      label="Phone Number"
+                      value={phone}
+                      keyboardType="phone-pad"
+                      onChangeText={(value) => setAddressField('phone', value)}
+                    />
                     <TextField
                       label="House, Street or Village"
                       value={addressLine}
-                      onChangeText={setAddressLine}
+                      onChangeText={(value) => setAddressField('addressLine', value)}
                     />
-                    <TextField label="District / Town" value={district} onChangeText={setDistrict} />
-                    <TextField label="PIN code (optional)" value={pincode} keyboardType="number-pad" onChangeText={setPincode} />
+                    <TextField
+                      label="District / Town"
+                      value={district}
+                      onChangeText={(value) => setAddressField('district', value)}
+                    />
+                    <TextField
+                      label="PIN code (optional)"
+                      value={pincode}
+                      keyboardType="number-pad"
+                      onChangeText={(value) => setAddressField('pincode', value)}
+                    />
                   </View>
 
                   {/* Payment Summary */}

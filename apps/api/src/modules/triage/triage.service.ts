@@ -154,7 +154,8 @@ export function classifySymptomsRuleBased(symptoms: string): {
   }
 
   // Default General Physician
-  const isUrgent = lower.includes('high fever') || lower.includes('tez bukhar') || lower.includes('severe vomiting');
+  const isUrgent =
+    lower.includes('high fever') || lower.includes('tez bukhar') || lower.includes('severe vomiting');
   return {
     urgency: isUrgent ? 'URGENT' : 'ROUTINE',
     specialization: 'General Physician',

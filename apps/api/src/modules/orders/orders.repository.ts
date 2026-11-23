@@ -1,5 +1,5 @@
 import { and, desc, eq, ne, sql } from 'drizzle-orm';
-import type { Order, OrderAddress, OrderItem, OrderStatus, OrderStatusHistory } from '@telecare/shared';
+import type { Order, OrderAddress, OrderStatus } from '@telecare/shared';
 import type { Database, DbExecutor } from '../../platform/db/client';
 import { medicines, pharmacies } from '../pharmacy/pharmacy.schema';
 import { users } from '../users/users.schema';
@@ -45,7 +45,9 @@ export interface OrderRepository {
   updateStatus(params: UpdateOrderStatusParams): Promise<Order | null>;
   getOrderedQuantityForPrescriptionItem(prescriptionItemId: string): Promise<number>;
   getDefaultPharmacyId(): Promise<string>;
-  getMedicineStock(medicineId: string): Promise<{ stockQty: number; pricePaise: number; name: string } | null>;
+  getMedicineStock(
+    medicineId: string,
+  ): Promise<{ stockQty: number; pricePaise: number; name: string } | null>;
 }
 
 export function createOrderRepository(db: Database): OrderRepository {
@@ -156,12 +158,7 @@ export function createOrderRepository(db: Database): OrderRepository {
         })
         .from(orderItems)
         .innerJoin(orders, eq(orderItems.orderId, orders.id))
-        .where(
-          and(
-            eq(orderItems.prescriptionItemId, prescriptionItemId),
-            ne(orders.status, 'CANCELLED'),
-          ),
-        );
+        .where(and(eq(orderItems.prescriptionItemId, prescriptionItemId), ne(orders.status, 'CANCELLED')));
       return result?.totalQty ?? 0;
     },
 
@@ -173,10 +170,7 @@ export function createOrderRepository(db: Database): OrderRepository {
             .select({ id: orders.id })
             .from(orders)
             .where(
-              and(
-                eq(orders.patientId, params.patientId),
-                eq(orders.idempotencyKey, params.idempotencyKey),
-              ),
+              and(eq(orders.patientId, params.patientId), eq(orders.idempotencyKey, params.idempotencyKey)),
             );
           if (existing) {
             const loaded = await loadOrderWithDetails(existing.id, tx);
@@ -192,12 +186,7 @@ export function createOrderRepository(db: Database): OrderRepository {
               stockQty: sql`${medicines.stockQty} - ${item.quantity}`,
               updatedAt: new Date(),
             })
-            .where(
-              and(
-                eq(medicines.id, item.medicineId),
-                sql`${medicines.stockQty} >= ${item.quantity}`,
-              ),
-            )
+            .where(and(eq(medicines.id, item.medicineId), sql`${medicines.stockQty} >= ${item.quantity}`))
             .returning({ id: medicines.id, stockQty: medicines.stockQty });
 
           if (updated.length === 0) {
@@ -223,6 +212,8 @@ export function createOrderRepository(db: Database): OrderRepository {
             idempotencyKey: params.idempotencyKey ?? null,
           })
           .returning({ id: orders.id });
+
+        if (!createdOrder) throw new Error('Failed to create order record');
 
         // 3. Insert order items & record stock movements
         for (const item of params.items) {

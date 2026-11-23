@@ -10,12 +10,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import {
-  ORDER_STATUSES,
-  PAYMENT_METHODS,
-  PAYMENT_STATUSES,
-  STOCK_MOVEMENT_REASONS,
-} from '@telecare/shared';
+import { ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES, STOCK_MOVEMENT_REASONS } from '@telecare/shared';
 import { pharmacies, medicines } from '../pharmacy/pharmacy.schema';
 import { prescriptions, prescriptionItems } from '../prescriptions/prescriptions.schema';
 import { users } from '../users/users.schema';

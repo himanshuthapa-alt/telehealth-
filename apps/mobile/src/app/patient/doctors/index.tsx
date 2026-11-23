@@ -200,7 +200,7 @@ export default function Doctors() {
               onPress={() => void search.fetchNextPage()}
             />
           </View>
-        ) : null
+        ) : undefined
       }
       keyboardShouldPersistTaps="handled"
     />

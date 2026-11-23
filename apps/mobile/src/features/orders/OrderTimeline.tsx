@@ -5,7 +5,11 @@ import { AppText, Icon, colors, radius, spacing } from '@/ui';
 
 const STEPS: { status: OrderStatus; title: string; subtitle: string }[] = [
   { status: 'PENDING', title: 'Order Placed', subtitle: 'Order received, awaiting verification' },
-  { status: 'CONFIRMED', title: 'Prescription Verified', subtitle: 'Pharmacy confirmed prescription and stock' },
+  {
+    status: 'CONFIRMED',
+    title: 'Prescription Verified',
+    subtitle: 'Pharmacy confirmed prescription and stock',
+  },
   { status: 'PACKED', title: 'Packed & Sealed', subtitle: 'Package ready for delivery' },
   { status: 'SHIPPED', title: 'Out for Delivery', subtitle: 'Delivery partner en route to your address' },
   { status: 'DELIVERED', title: 'Delivered', subtitle: 'Package handed over, payment collected' },
@@ -65,13 +69,7 @@ export function OrderTimeline({ order }: { order: Order }) {
           <View key={step.status} style={styles.stepRow}>
             {/* Step dot and vertical line */}
             <View style={styles.indicatorCol}>
-              <View
-                style={[
-                  styles.dot,
-                  isComplete && styles.dotComplete,
-                  isCurrent && styles.dotCurrent,
-                ]}
-              >
+              <View style={[styles.dot, isComplete && styles.dotComplete, isCurrent && styles.dotCurrent]}>
                 {isComplete ? (
                   <Icon name={ICONS.check} size={14} color={colors.surface} />
                 ) : (

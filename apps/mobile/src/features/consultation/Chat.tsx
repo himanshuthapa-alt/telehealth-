@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import type { ScrollViewInstance } from 'react-native';
 import { MESSAGE_MAX_LENGTH, type ChatMessage, type PrescriptionCardBody } from '@telecare/shared';
 import { formatTime } from '@/features/appointments/format';
 import { ICONS } from '@/features/shell/icons';
@@ -91,7 +92,7 @@ export function Chat({
   onOpenPrescription: (prescriptionId: string) => void;
 }) {
   const [text, setText] = useState('');
-  const scroll = useRef<ScrollView>(null);
+  const scroll = useRef<ScrollViewInstance>(null);
   const submit = () => {
     const body = text.trim();
     if (!body) return;

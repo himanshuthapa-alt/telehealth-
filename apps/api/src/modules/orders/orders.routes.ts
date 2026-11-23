@@ -44,7 +44,8 @@ export function orderRoutes(service: OrderService, guards: AuthGuards): Router {
   /** GET /v1/orders/track/:trackingId: lookup order status by tracking ID (TC-XXXX-XXXX).
    * MUST be registered before /:id or Express will match "track" as an id. */
   router.get('/v1/orders/track/:trackingId', async (req, res) => {
-    const order = await service.trackOrder(req.params.trackingId);
+    const trackingId = z.string().min(1).parse(req.params.trackingId);
+    const order = await service.trackOrder(trackingId);
     res.json(order);
   });
 
@@ -67,7 +68,8 @@ export function orderRoutes(service: OrderService, guards: AuthGuards): Router {
   /** GET /v1/orders/:id: detail for patient or pharmacy. */
   router.get('/v1/orders/:id', guards.requireAuth, async (req, res) => {
     const actor = getActor(res);
-    const order = await service.getOrder({ id: actor.id, role: actor.role }, req.params.id);
+    const orderId = z.string().min(1).parse(req.params.id);
+    const order = await service.getOrder({ id: actor.id, role: actor.role }, orderId);
     res.json(order);
   });
 
@@ -75,11 +77,8 @@ export function orderRoutes(service: OrderService, guards: AuthGuards): Router {
   router.post('/v1/orders/:id/status', guards.requireAuth, async (req, res) => {
     const actor = getActor(res);
     const body = parseBody(UpdateStatusSchema, req);
-    const updated = await service.updateOrderStatus(
-      { id: actor.id, role: actor.role },
-      req.params.id,
-      body,
-    );
+    const orderId = z.string().min(1).parse(req.params.id);
+    const updated = await service.updateOrderStatus({ id: actor.id, role: actor.role }, orderId, body);
     res.json(updated);
   });
 

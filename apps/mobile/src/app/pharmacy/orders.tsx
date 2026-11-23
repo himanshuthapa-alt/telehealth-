@@ -103,7 +103,12 @@ export default function PharmacyOrders() {
 
       {/* Order Fulfillment Modal */}
       {selectedOrder && (
-        <Modal visible={!!selectedOrder} animationType="slide" transparent onRequestClose={() => setSelectedOrder(null)}>
+        <Modal
+          visible={!!selectedOrder}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setSelectedOrder(null)}
+        >
           <View style={styles.modalOverlay}>
             <View style={styles.modalSheet}>
               <View style={styles.modalHeader}>

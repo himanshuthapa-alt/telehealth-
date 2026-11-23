@@ -28,13 +28,7 @@ const SOFT_BG: Record<'primary' | 'success' | 'warning' | 'danger', keyof typeof
   danger: 'dangerSoft',
 };
 
-export function OrderCard({
-  order,
-  onPress,
-}: {
-  order: Order;
-  onPress: () => void;
-}) {
+export function OrderCard({ order, onPress }: { order: Order; onPress: () => void }) {
   const statusInfo = ORDER_STATUS_LABELS[order.status];
   const icon = STATUS_ICONS[order.status] ?? ICONS.medicines;
   const tone = STATUS_TONES[order.status] ?? 'primary';
