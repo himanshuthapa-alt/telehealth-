@@ -38,6 +38,10 @@ const app = createApp({
   video: config.VIDEO_PROVIDER === 'fake' ? createFakeVideoProvider() : null,
   groqApiKey: config.GROQ_API_KEY,
   triageModel: config.TRIAGE_MODEL,
+  allowAnyWebOrigin: config.NODE_ENV === 'development',
+  webOrigins: config.WEB_ORIGINS.split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
 });
 
 // Close consultations whose join window has passed.

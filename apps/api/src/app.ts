@@ -4,6 +4,7 @@ import type { Logger } from './platform/logger';
 import { createAccessTokens, createAuthGuards } from './platform/http/auth';
 import { errorHandler, notFoundHandler } from './platform/http/errors';
 import { requestContext } from './platform/http/request-context';
+import { webCors } from './platform/http/web-cors';
 import { healthRoutes } from './modules/health/health.routes';
 import { createAuditLog } from './modules/audit/audit';
 import { createRefreshTokenRepository, createResetCodeRepository } from './modules/auth/auth.repository';
@@ -54,6 +55,8 @@ export interface AppDeps {
   video: VideoProvider | null;
   groqApiKey?: string;
   triageModel?: string;
+  allowAnyWebOrigin?: boolean;
+  webOrigins?: readonly string[];
 }
 
 /**
@@ -67,6 +70,7 @@ export function createApp(deps: AppDeps) {
   app.set('trust proxy', 1);
 
   app.use(requestContext(deps.logger));
+  app.use(webCors({ allowAnyOrigin: deps.allowAnyWebOrigin, allowedOrigins: deps.webOrigins }));
   app.use(express.json({ limit: '100kb' }));
 
   const repos = (db: Parameters<typeof createAuditLog>[0]): AuthRepos => ({

@@ -4,6 +4,8 @@ const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(4000),
   HOST: z.string().default('0.0.0.0'),
+  /** Comma-separated browser app origins allowed in production. */
+  WEB_ORIGINS: z.string().default(''),
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
   /** Signs access tokens. Generate with: openssl rand -base64 48 */
   JWT_SECRET: z.string().min(32, 'must be at least 32 characters'),
