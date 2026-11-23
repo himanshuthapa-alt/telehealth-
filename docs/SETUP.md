@@ -29,12 +29,14 @@ Start the API and database as shown above, then use one of these targets:
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Desktop web browser               | `npm run dev:web`                                                                                                                                                                          |
 | Phone-size preview on your laptop | Run `npm run dev:web`, then open the browser device toolbar with **Ctrl+Shift+M** (Edge/Chrome) and choose a device preset.                                                                |
-| Android emulator                  | Start an emulator in Android Studio, then run `npm run dev:android`; or run `npm run dev:mobile` and press **a**.                                                                          |
+| Android emulator                  | Start an emulator in Android Studio, then run `npm run dev:android`. This explicitly launches in Expo Go.                                                                                  |
 | Physical Android phone            | Run `npm run dev:mobile`, then scan the QR code with Expo Go. Keep the phone and laptop on the same Wi-Fi.                                                                                 |
 | Phone browser                     | Run `npm run dev:web` and open `http://<laptop-LAN-IP>:8081` on the phone while both are on the same Wi-Fi. The development API allows browser requests from LAN origins.                  |
 | Production web export             | Run `npm run build:web`; serve the generated `apps/mobile/dist` folder with single-page-app route fallback enabled. Set `EXPO_PUBLIC_API_URL` to the public HTTPS API URL before building. |
 
 The app uses Expo SDK 58. The current App Store version of Expo Go does not include SDK 58; native iPhone testing therefore needs an iOS development build distributed through EAS/TestFlight, while the web app can be opened in Safari. See [Expo's SDK compatibility guidance](https://docs.expo.dev/troubleshooting/expo-go-version-mismatch/). In production, set `WEB_ORIGINS` in the API environment to a comma-separated list of exact website origins (for example, `https://telecare.example.com`).
+
+If Expo Go is not installed in the Android emulator, install an SDK 58-compatible build from [expo.dev/go](https://expo.dev/go). If the CLI says no development build is installed, use `npm run dev:android`; it forces the Expo Go target.
 
 ## Demo accounts
 
@@ -55,6 +57,7 @@ The app uses Expo SDK 58. The current App Store version of Expo Go does not incl
 ## Troubleshooting
 
 - **App says "Could not reach the server":** API not running, or phone on a different network.
+- **Android says no development build is installed:** start with `npm run dev:android` to force Expo Go, and install the SDK 58-compatible Expo Go app if needed.
 - **API refuses to start with `JWT_SECRET`:** your `.env` predates Phase 2. Add `JWT_SECRET=` with `openssl rand -base64 48`.
 - **App says database unavailable / `/health` is 503:** run `npm run db:up`.
 - **"Invalid hook call" / duplicate React:** run `npx expo-doctor` in `apps/mobile` and keep React versions aligned with the Expo SDK.
