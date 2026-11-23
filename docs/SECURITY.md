@@ -15,7 +15,8 @@ Wording rule: TeleCare+ is "designed with reference to DPDP/DISHA principles", n
 
 - **Passwords:** argon2id from Node's built-in crypto (19 MiB, 2 passes), PHC format. 8–128 characters, a short common-password list, and not the phone number. Same rule in the app and API (`packages/shared`). The synopsis says bcrypt; argon2id is its recommended successor (blueprint §16 allows either).
 - **Sessions:** 15-minute HS256 access JWT (`JWT_SECRET`, min 32 chars, checked at boot) holding only user id and role. 30-day refresh token: random, only its SHA-256 stored, rotated on every use. Rotation is atomic, so concurrent refreshes can't both win. Reuse of a rotated token revokes all sessions and is audited.
-- **On device:** refresh token in Android Keystore / iOS Keychain (`expo-secure-store`, this-device-only). Access token in memory only.
+- **On device:** refresh token in Android Keystore / iOS Keychain (`expo-secure-store`, this-device-only). Access token in memory only. On web, session tokens stay in memory and are cleared when the page reloads.
+- **Web origins:** development permits browser origins to accommodate changing localhost/LAN URLs. Production only returns CORS headers for exact origins listed in `WEB_ORIGINS`; CORS does not replace API authentication or authorization.
 - **Authorization:** `requireAuth` and `requireRole(...)` guards. Denials return 403 and are audited. Ownership checks will live in each service (§12 layer 2) from Phase 4 on. The app's role-based navigation only picks screens.
 - **No account enumeration:** same login error for unknown phone and wrong password (a dummy hash keeps timing equal); forgot-password always answers 202.
 - **Privilege escalation:** register is patient-only and rejects unknown fields such as `role` (tested).

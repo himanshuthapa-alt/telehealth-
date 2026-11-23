@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 import { OfflineBanner } from './OfflineBanner';
 import { colors, spacing } from './theme';
@@ -13,8 +13,10 @@ export function Screen({ children, edges = [] }: { children: ReactNode; edges?: 
   return (
     <SafeAreaView style={styles.safe} edges={edges}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <OfflineBanner />
-        {children}
+        <View style={styles.inner}>
+          <OfflineBanner />
+          {children}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -22,5 +24,6 @@ export function Screen({ children, edges = [] }: { children: ReactNode; edges?: 
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.md, gap: spacing.md },
+  content: { flexGrow: 1, alignItems: 'center', paddingHorizontal: spacing.md },
+  inner: { width: '100%', maxWidth: 960, paddingVertical: spacing.md, gap: spacing.md },
 });

@@ -80,26 +80,28 @@ export default function ConsultationRoom() {
       err instanceof ApiError && err.failure.kind === 'http' && err.failure.code === 'JOIN_NOT_OPEN';
     return (
       <SafeAreaView style={styles.safe}>
-        {header}
-        <View style={styles.body}>
-          {room.room.phase === 'joining' && <Skeleton cards={2} />}
-          {err !== null && (
-            <>
-              <Banner
-                tone={notOpen ? 'info' : 'danger'}
-                message={
-                  notOpen && appointment
-                    ? `The room opens at ${formatTime(new Date(new Date(appointment.startAt).getTime() - 10 * 60_000))}, 10 minutes before your time.`
-                    : errorMessage(err)
-                }
-              />
-              <Button
-                label="Try again"
-                icon={{ android: 'refresh', ios: 'arrow.clockwise' }}
-                onPress={room.rejoin}
-              />
-            </>
-          )}
+        <View style={styles.inner}>
+          {header}
+          <View style={styles.body}>
+            {room.room.phase === 'joining' && <Skeleton cards={2} />}
+            {err !== null && (
+              <>
+                <Banner
+                  tone={notOpen ? 'info' : 'danger'}
+                  message={
+                    notOpen && appointment
+                      ? `The room opens at ${formatTime(new Date(new Date(appointment.startAt).getTime() - 10 * 60_000))}, 10 minutes before your time.`
+                      : errorMessage(err)
+                  }
+                />
+                <Button
+                  label="Try again"
+                  icon={{ android: 'refresh', ios: 'arrow.clockwise' }}
+                  onPress={room.rejoin}
+                />
+              </>
+            )}
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -110,83 +112,94 @@ export default function ConsultationRoom() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      {header}
-      <KeyboardAvoidingView style={styles.body} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.status} accessibilityLiveRegion="polite">
-          <AppText variant="label">{statusLine(c, viewer)}</AppText>
-          {open && (
-            <>
-              <Presence label="Doctor" here={c.present.doctor} />
-              <Presence label="Patient" here={c.present.patient} />
-            </>
+      <View style={styles.inner}>
+        {header}
+        <KeyboardAvoidingView style={styles.body} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={styles.status} accessibilityLiveRegion="polite">
+            <AppText variant="label">{statusLine(c, viewer)}</AppText>
+            {open && (
+              <>
+                <Presence label="Doctor" here={c.present.doctor} />
+                <Presence label="Patient" here={c.present.patient} />
+              </>
+            )}
+          </View>
+
+          {!room.connected && (
+            <Banner tone="warning" message="Connection lost. Reconnecting… Your messages are kept." />
           )}
-        </View>
+          {actionError !== null && <Banner tone="danger" message={errorMessage(actionError)} />}
 
-        {!room.connected && (
-          <Banner tone="warning" message="Connection lost. Reconnecting… Your messages are kept." />
-        )}
-        {actionError !== null && <Banner tone="danger" message={errorMessage(actionError)} />}
+          {c.status === 'ACTIVE' && <VideoPanel video={video} />}
 
-        {c.status === 'ACTIVE' && <VideoPanel video={video} />}
+          {viewer === 'DOCTOR' && (c.status === 'ACTIVE' || c.status === 'COMPLETED') && (
+            <Button
+              label="Write prescription"
+              variant="secondary"
+              icon={ICONS.medicines}
+              onPress={() =>
+                router.push({ pathname: '/prescription/[consultationId]', params: { consultationId: c.id } })
+              }
+            />
+          )}
+          {viewer === 'DOCTOR' && c.status === 'WAITING' && (
+            <Button label="Start consultation" icon={ICONS.play} onPress={() => run(room.start)} />
+          )}
+          {viewer === 'DOCTOR' &&
+            c.status === 'ACTIVE' &&
+            (confirmEnd ? (
+              <View style={styles.confirm}>
+                <AppText variant="label">End the consultation for both of you?</AppText>
+                <Button
+                  label="Yes, end it"
+                  variant="danger"
+                  icon={ICONS.stop}
+                  onPress={() => run(room.end)}
+                />
+                <Button
+                  label="Keep going"
+                  variant="ghost"
+                  icon={ICONS.check}
+                  onPress={() => setConfirmEnd(false)}
+                />
+              </View>
+            ) : (
+              <Button
+                label="End consultation"
+                variant="danger"
+                icon={ICONS.stop}
+                onPress={() => setConfirmEnd(true)}
+              />
+            ))}
 
-        {viewer === 'DOCTOR' && (c.status === 'ACTIVE' || c.status === 'COMPLETED') && (
-          <Button
-            label="Write prescription"
-            variant="secondary"
-            icon={ICONS.medicines}
-            onPress={() =>
-              router.push({ pathname: '/prescription/[consultationId]', params: { consultationId: c.id } })
+          <Chat
+            messages={room.messages}
+            outbox={room.outbox}
+            myId={myId}
+            otherName={otherName || (viewer === 'PATIENT' ? 'Doctor' : 'Patient')}
+            canSend={open}
+            onSend={room.send}
+            onRetry={room.retry}
+            onOpenPrescription={(id) =>
+              viewer === 'PATIENT'
+                ? router.push({ pathname: '/patient/medicines/prescription/[id]', params: { id } })
+                : router.push({
+                    pathname: '/prescription/[consultationId]',
+                    params: { consultationId: c.id },
+                  })
             }
           />
-        )}
-        {viewer === 'DOCTOR' && c.status === 'WAITING' && (
-          <Button label="Start consultation" icon={ICONS.play} onPress={() => run(room.start)} />
-        )}
-        {viewer === 'DOCTOR' &&
-          c.status === 'ACTIVE' &&
-          (confirmEnd ? (
-            <View style={styles.confirm}>
-              <AppText variant="label">End the consultation for both of you?</AppText>
-              <Button label="Yes, end it" variant="danger" icon={ICONS.stop} onPress={() => run(room.end)} />
-              <Button
-                label="Keep going"
-                variant="ghost"
-                icon={ICONS.check}
-                onPress={() => setConfirmEnd(false)}
-              />
-            </View>
-          ) : (
-            <Button
-              label="End consultation"
-              variant="danger"
-              icon={ICONS.stop}
-              onPress={() => setConfirmEnd(true)}
-            />
-          ))}
 
-        <Chat
-          messages={room.messages}
-          outbox={room.outbox}
-          myId={myId}
-          otherName={otherName || (viewer === 'PATIENT' ? 'Doctor' : 'Patient')}
-          canSend={open}
-          onSend={room.send}
-          onRetry={room.retry}
-          onOpenPrescription={(id) =>
-            viewer === 'PATIENT'
-              ? router.push({ pathname: '/patient/medicines/prescription/[id]', params: { id } })
-              : router.push({ pathname: '/prescription/[consultationId]', params: { consultationId: c.id } })
-          }
-        />
-
-        {!open && <Button label="Back to my bookings" icon={ICONS.bookings} onPress={leave} />}
-      </KeyboardAvoidingView>
+          {!open && <Button label="Back to my bookings" icon={ICONS.bookings} onPress={leave} />}
+        </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
+  inner: { flex: 1, width: '100%', maxWidth: 960, alignSelf: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', paddingLeft: spacing.md, gap: spacing.sm },
   body: { flex: 1, padding: spacing.md, gap: spacing.sm },
   status: {
