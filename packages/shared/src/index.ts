@@ -8,3 +8,4 @@ export * from './time';
 export * from './consultation';
 export * from './prescriptions';
 export * from './orders';
+export * from './voice';

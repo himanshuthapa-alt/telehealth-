@@ -1,101 +1,65 @@
 /**
- * Maps a spoken phrase to an app action. Pure and synchronous so it is trivial
- * to test. Matching is keyword-based (English + Hindi/Hinglish) — no LLM — so a
- * non-technical user can navigate by voice offline.
+ * Mobile voice controller: turns a shared `VoiceIntent` into spoken/visible
+ * copy and the matching screen navigation. The parsing itself lives in
+ * `@telecare/shared` (`parseVoiceIntent`) so the app and the API agree.
+ *
+ * Voice only navigates. Anything that books, orders, cancels or spends money
+ * happens on the destination screen, behind that screen's own confirmation —
+ * so a misheard word can never spend money.
  */
+import { router } from 'expo-router';
+import { parseVoiceIntent, type VoiceIntent } from '@telecare/shared';
 
-export type VoiceAction =
-  | { kind: 'navigate'; path: string; say: string }
-  | { kind: 'specialty'; specialization: string; say: string }
-  | { kind: 'back'; say: string }
-  | { kind: 'help'; say: string }
-  | { kind: 'unknown'; say: string };
+export { parseVoiceIntent };
+export type { VoiceIntent };
 
-/** Specialty keywords → the app's Specialization value. Checked before generic nav. */
-const SPECIALTIES: { words: string[]; specialization: string }[] = [
-  { words: ['skin', 'rash', 'itch', 'khujli', 'daane', 'pimple', 'acne'], specialization: 'Dermatology' },
-  {
-    words: ['child', 'baby', 'baccha', 'bachha', 'kid', 'infant', 'pediatric'],
-    specialization: 'Pediatrics',
-  },
-  { words: ['heart', 'chest', 'dil', 'dhadkan', 'cardio', 'bp'], specialization: 'Cardiology' },
-  { words: ['bone', 'joint', 'knee', 'haddi', 'back pain', 'ortho'], specialization: 'Orthopedics' },
-  { words: ['ear', 'nose', 'throat', 'kaan', 'gala', 'naak', 'ent'], specialization: 'ENT' },
-  { words: ['women', 'woman', 'pregnan', 'gynae', 'gyno', 'mahila', 'period'], specialization: 'Gynecology' },
-  {
-    words: ['mind', 'mental', 'tension', 'depress', 'anxiety', 'stress', 'mann'],
-    specialization: 'Psychiatry',
-  },
-  {
-    words: ['fever', 'cough', 'cold', 'general', 'bukhar', 'physician'],
-    specialization: 'General Physician',
-  },
-];
-
-/** Simple screen navigation keywords. */
-const SCREENS: { words: string[]; path: string; say: string }[] = [
-  { words: ['home', 'ghar', 'start', 'main screen', 'mukhya'], path: '/patient/home', say: 'Opening home' },
-  {
-    words: ['booking', 'appointment', 'appointments', 'my visits', 'meeting'],
-    path: '/patient/appointments',
-    say: 'Opening your bookings',
-  },
-  {
-    words: ['medicine', 'medicines', 'dawai', 'dawa', 'pharmacy', 'order', 'prescription'],
-    path: '/patient/medicines',
-    say: 'Opening medicines',
-  },
-  {
-    words: ['profile', 'my account', 'my detail', 'settings'],
-    path: '/patient/profile',
-    say: 'Opening your profile',
-  },
-];
-
-function has(text: string, words: string[]): boolean {
-  return words.some((w) => text.includes(w));
+/** English confirmation, spoken via Chatterbox and shown on screen. */
+export function sayForIntent(intent: VoiceIntent): string {
+  switch (intent.kind) {
+    case 'emergency':
+      return 'This may be an emergency. Please call 108 or 112 now.';
+    case 'find_doctor':
+      return intent.specialization ? `Finding a ${intent.specialization} doctor` : 'Opening doctors';
+    case 'list_appointments':
+      return 'Opening your bookings';
+    case 'show_prescriptions':
+      return 'Opening medicines';
+    case 'go_home':
+      return 'Opening home';
+    case 'go_back':
+      return 'Going back';
+    case 'help':
+      return 'You can say: find a doctor, my bookings, medicines, or go home. You can also name a problem like skin, child, heart, or fever. Say go back to return.';
+    case 'unknown':
+      return "Sorry, I didn't understand. Say help to hear what you can do.";
+  }
 }
 
-export function parseVoiceCommand(transcript: string): VoiceAction {
-  const text = transcript.toLowerCase().trim();
-  if (!text) return { kind: 'unknown', say: "I didn't catch that. Please try again." };
-
-  // Go back
-  if (has(text, ['go back', 'back', 'wapas', 'peeche', 'previous', 'cancel'])) {
-    return { kind: 'back', say: 'Going back' };
+/** Navigate for the intent. Emergency, help and unknown stay put. */
+export function navigateIntent(intent: VoiceIntent): void {
+  switch (intent.kind) {
+    case 'find_doctor':
+      router.navigate(
+        intent.specialization
+          ? ({ pathname: '/patient/doctors', params: { specialization: intent.specialization } } as never)
+          : ('/patient/doctors' as never),
+      );
+      break;
+    case 'list_appointments':
+      router.navigate('/patient/appointments' as never);
+      break;
+    case 'show_prescriptions':
+      router.navigate('/patient/medicines' as never);
+      break;
+    case 'go_home':
+      router.navigate('/patient/home' as never);
+      break;
+    case 'go_back':
+      router.back();
+      break;
+    case 'emergency':
+    case 'help':
+    case 'unknown':
+      break;
   }
-
-  // Help / what can I say
-  if (has(text, ['help', 'madad', 'what can i say', 'commands', 'kya bol', 'options'])) {
-    return {
-      kind: 'help',
-      say: 'You can say: find a doctor, my bookings, medicines, or profile. You can also name a problem like skin, child, heart, or fever. Say go back to return.',
-    };
-  }
-
-  // Specialty-specific doctor search (check before generic "doctor")
-  for (const s of SPECIALTIES) {
-    if (has(text, s.words)) {
-      return {
-        kind: 'specialty',
-        specialization: s.specialization,
-        say: `Finding a ${s.specialization} doctor`,
-      };
-    }
-  }
-
-  // Generic "find a doctor"
-  if (has(text, ['doctor', 'doctors', 'find a doctor', 'dhundo', 'consult'])) {
-    return { kind: 'navigate', path: '/patient/doctors', say: 'Opening doctors' };
-  }
-
-  // Other screens
-  for (const sc of SCREENS) {
-    if (has(text, sc.words)) return { kind: 'navigate', path: sc.path, say: sc.say };
-  }
-
-  return {
-    kind: 'unknown',
-    say: "Sorry, I didn't understand. Say help to hear what you can do.",
-  };
 }

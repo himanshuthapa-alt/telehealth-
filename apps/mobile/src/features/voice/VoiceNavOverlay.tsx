@@ -1,7 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { router } from 'expo-router';
-import { parseVoiceCommand } from './intents';
+import { Linking, Pressable, StyleSheet, View } from 'react-native';
+import { navigateIntent, parseVoiceIntent, sayForIntent } from './intents';
 import { speak } from './speech-api';
 import { normalizeSpeechError, speechInput, useSpeechEvent } from './speech-input';
 import { AppText, MicButton, colors, radius, spacing, type MicStatus } from '@/ui';
@@ -18,6 +17,9 @@ const ERROR_SAY: Record<ReturnType<typeof normalizeSpeechError>, string> = {
  * command ("find a doctor", "medicines", "child doctor", "go back"), and the
  * app navigates immediately while Chatterbox speaks a confirmation.
  *
+ * Emergency words ("chest pain", "saans nahi", …) always win: the app does not
+ * navigate, it speaks a warning and shows big Call 108 / 112 buttons.
+ *
  * ponytail: navigation is fired before (and independently of) the slow CPU TTS,
  * so the UI never blocks waiting on audio.
  */
@@ -25,37 +27,26 @@ export function VoiceNavOverlay() {
   const [status, setStatus] = useState<MicStatus>('idle');
   const [heard, setHeard] = useState('');
   const [reply, setReply] = useState('');
+  const [emergency, setEmergency] = useState(false);
   const handled = useRef(false);
 
   const act = useCallback((transcript: string) => {
     if (handled.current) return;
     handled.current = true;
     setHeard(transcript);
-    const action = parseVoiceCommand(transcript);
-    setReply(action.say);
+    const intent = parseVoiceIntent(transcript);
+    const say = sayForIntent(intent);
+    setReply(say);
 
-    // Navigate first — never wait on the (slow) TTS.
-    switch (action.kind) {
-      case 'navigate':
-        router.navigate(action.path as never);
-        break;
-      case 'specialty':
-        router.navigate({
-          pathname: '/patient/doctors',
-          params: { specialization: action.specialization },
-        } as never);
-        break;
-      case 'back':
-        router.back();
-        break;
-      case 'help':
-      case 'unknown':
-        break;
+    if (intent.kind === 'emergency') {
+      setEmergency(true);
+    } else {
+      setEmergency(false);
+      navigateIntent(intent); // navigate first — never wait on the (slow) TTS
     }
 
-    // Speak the confirmation via Chatterbox (fire-and-forget; may lag on CPU).
     setStatus('speaking');
-    void speak(action.say)
+    void speak(say)
       .catch(() => {})
       .finally(() => setStatus('idle'));
   }, []);
@@ -89,6 +80,7 @@ export function VoiceNavOverlay() {
     handled.current = false;
     setHeard('');
     setReply('');
+    setEmergency(false);
     setStatus('listening');
     speechInput.start({ lang: 'en-IN' });
   }, [status]);
@@ -98,13 +90,41 @@ export function VoiceNavOverlay() {
   return (
     <View style={styles.wrap} pointerEvents="box-none">
       {showPanel && (
-        <View style={styles.panel} pointerEvents="none">
+        <View style={[styles.panel, emergency && styles.panelEmergency]}>
           {heard !== '' && (
             <AppText variant="caption" color="textMuted">
               You said: “{heard}”
             </AppText>
           )}
-          {reply !== '' && <AppText variant="label">{reply}</AppText>}
+          {reply !== '' && (
+            <AppText variant="label" color={emergency ? 'danger' : 'text'}>
+              {reply}
+            </AppText>
+          )}
+          {emergency && (
+            <View style={styles.callRow}>
+              <Pressable
+                style={styles.callButton}
+                accessibilityRole="button"
+                accessibilityLabel="Call 108, ambulance"
+                onPress={() => Linking.openURL('tel:108')}
+              >
+                <AppText variant="label" color="onPrimary">
+                  Call 108
+                </AppText>
+              </Pressable>
+              <Pressable
+                style={styles.callButton}
+                accessibilityRole="button"
+                accessibilityLabel="Call 112, emergency"
+                onPress={() => Linking.openURL('tel:112')}
+              >
+                <AppText variant="label" color="onPrimary">
+                  Call 112
+                </AppText>
+              </Pressable>
+            </View>
+          )}
         </View>
       )}
 
@@ -129,11 +149,26 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    gap: 2,
+    gap: spacing.xs,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 6,
     elevation: 4,
+  },
+  panelEmergency: {
+    borderColor: colors.danger,
+    borderWidth: 2,
+    backgroundColor: colors.dangerSoft,
+  },
+  callRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
+  callButton: {
+    flex: 1,
+    minHeight: 56,
+    borderRadius: radius.md,
+    backgroundColor: colors.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
   },
 });

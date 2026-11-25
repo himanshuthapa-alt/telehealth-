@@ -1,30 +1,23 @@
-import { parseVoiceCommand } from './intents';
+import { parseVoiceIntent, sayForIntent } from './intents';
 
-describe('parseVoiceCommand', () => {
-  it('routes specialty words to a doctor search', () => {
-    expect(parseVoiceCommand('my child has fever')).toMatchObject({
-      kind: 'specialty',
-      specialization: 'Pediatrics',
-    });
-    expect(parseVoiceCommand('skin problem')).toMatchObject({ specialization: 'Dermatology' });
-    expect(parseVoiceCommand('kaan me dard')).toMatchObject({ specialization: 'ENT' });
+describe('voice controller', () => {
+  it('speaks a warning (and does not just navigate) for emergencies', () => {
+    const intent = parseVoiceIntent('he is not breathing');
+    expect(intent.kind).toBe('emergency');
+    expect(sayForIntent(intent)).toMatch(/call 108/i);
   });
 
-  it('navigates to screens by keyword (English + Hindi)', () => {
-    expect(parseVoiceCommand('show my bookings')).toMatchObject({ path: '/patient/appointments' });
-    expect(parseVoiceCommand('dawai chaiye')).toMatchObject({ path: '/patient/medicines' });
-    expect(parseVoiceCommand('open profile')).toMatchObject({ path: '/patient/profile' });
-    expect(parseVoiceCommand('ghar')).toMatchObject({ path: '/patient/home' });
+  it('names the specialty in the spoken confirmation', () => {
+    expect(sayForIntent(parseVoiceIntent('skin problem'))).toBe('Finding a Dermatology doctor');
+    expect(sayForIntent(parseVoiceIntent('find a doctor'))).toBe('Opening doctors');
   });
 
-  it('handles generic doctor, back and help', () => {
-    expect(parseVoiceCommand('find a doctor')).toMatchObject({ path: '/patient/doctors' });
-    expect(parseVoiceCommand('go back')).toMatchObject({ kind: 'back' });
-    expect(parseVoiceCommand('help')).toMatchObject({ kind: 'help' });
+  it('confirms screen navigation', () => {
+    expect(sayForIntent(parseVoiceIntent('show my bookings'))).toBe('Opening your bookings');
+    expect(sayForIntent(parseVoiceIntent('dawai'))).toBe('Opening medicines');
   });
 
-  it('falls back to unknown', () => {
-    expect(parseVoiceCommand('xyzzy order a pizza... ')).not.toMatchObject({ kind: 'unknown' }); // "order" -> medicines
-    expect(parseVoiceCommand('blah blah nonsense')).toMatchObject({ kind: 'unknown' });
+  it('offers help for an unknown phrase', () => {
+    expect(sayForIntent(parseVoiceIntent('blah blah'))).toMatch(/say help/i);
   });
 });

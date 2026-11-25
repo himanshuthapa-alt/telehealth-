@@ -38,6 +38,7 @@ import { createOrderRepository } from './modules/orders/orders.repository';
 import { createOrderService } from './modules/orders/orders.service';
 import { orderRoutes } from './modules/orders/orders.routes';
 import { speechRoutes } from './modules/speech/speech.routes';
+import { voiceRoutes } from './modules/voice/voice.routes';
 import { addDays, istInstant } from '@telecare/shared';
 
 export interface AppDeps {
@@ -145,6 +146,7 @@ export function createApp(deps: AppDeps) {
   });
   app.use(orderRoutes(orderService, guards));
   app.use(speechRoutes(deps.ttsBaseUrl));
+  app.use(voiceRoutes());
 
   app.use(notFoundHandler);
   app.use(errorHandler(deps.logger));
