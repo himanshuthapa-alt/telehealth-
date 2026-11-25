@@ -29,6 +29,7 @@ export function VoiceNavOverlay() {
   const [reply, setReply] = useState('');
   const [emergency, setEmergency] = useState(false);
   const handled = useRef(false);
+  const lastTranscript = useRef('');
 
   const act = useCallback((transcript: string) => {
     if (handled.current) return;
@@ -53,11 +54,20 @@ export function VoiceNavOverlay() {
 
   useSpeechEvent('result', (e) => {
     const transcript = e.results?.[0]?.transcript ?? '';
+    if (transcript) {
+      lastTranscript.current = transcript;
+      setHeard(transcript);
+    }
     if (e.isFinal && transcript) act(transcript);
-    else if (transcript) setHeard(transcript);
   });
 
-  useSpeechEvent('end', () => setStatus((s) => (s === 'listening' ? 'idle' : s)));
+  // Many Android recognizers stop on silence without ever marking a result
+  // `isFinal`. If listening ended and we have a transcript we never acted on,
+  // act on it now so the app still responds.
+  useSpeechEvent('end', () => {
+    if (!handled.current && lastTranscript.current) act(lastTranscript.current);
+    setStatus((s) => (s === 'listening' ? 'idle' : s));
+  });
   useSpeechEvent('nomatch', () => {
     setReply("I didn't catch that. Please try again.");
     setStatus('idle');
@@ -78,6 +88,7 @@ export function VoiceNavOverlay() {
       return;
     }
     handled.current = false;
+    lastTranscript.current = '';
     setHeard('');
     setReply('');
     setEmergency(false);
