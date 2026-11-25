@@ -40,7 +40,7 @@ import { createOrderService } from './modules/orders/orders.service';
 import { orderRoutes } from './modules/orders/orders.routes';
 import { speechRoutes } from './modules/speech/speech.routes';
 import { voiceRoutes } from './modules/voice/voice.routes';
-import { addDays, istInstant, type DoctorSource } from '@telecare/shared';
+import { addDays, istInstant, type DoctorSource, type FulfillmentSource } from '@telecare/shared';
 
 export interface AppDeps {
   logger: Logger;
@@ -57,6 +57,8 @@ export interface AppDeps {
   ttsBaseUrl: string;
   /** Which doctor directory to serve: 'local' (Postgres) or 'practo' (external stub). */
   doctorProvider: DoctorSource;
+  /** Who fulfils orders: 'local' (pharmacy queue) or 'partner' (external stub). */
+  fulfillmentProvider: FulfillmentSource;
 }
 
 /**
@@ -147,6 +149,7 @@ export function createApp(deps: AppDeps) {
     prescriptions: prescriptionRepo,
     audit: createAuditLog(deps.db),
     now,
+    fulfillmentProvider: deps.fulfillmentProvider,
   });
   app.use(orderRoutes(orderService, guards));
   app.use(speechRoutes(deps.ttsBaseUrl));

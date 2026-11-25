@@ -45,6 +45,7 @@ export function testApp(overrides: Partial<AppDeps> = {}) {
     video: createFakeVideoProvider(),
     ttsBaseUrl: 'http://localhost:4123',
     doctorProvider: 'local',
+    fulfillmentProvider: 'local',
     ...overrides,
   });
   return { app, sentCodes };

@@ -38,6 +38,10 @@ const ListQuerySchema = z.strictObject({
   status: z.enum(ORDER_STATUSES).optional(),
 });
 
+const PartnerStatusSchema = z.strictObject({
+  status: z.string().trim().min(1).max(40),
+});
+
 export function orderRoutes(service: OrderService, guards: AuthGuards): Router {
   const router = Router();
 
@@ -79,6 +83,16 @@ export function orderRoutes(service: OrderService, guards: AuthGuards): Router {
     const body = parseBody(UpdateStatusSchema, req);
     const orderId = z.string().min(1).parse(req.params.id);
     const updated = await service.updateOrderStatus({ id: actor.id, role: actor.role }, orderId, body);
+    res.json(updated);
+  });
+
+  /** POST /v1/orders/:id/partner-status: apply a delivery-partner status event
+   * (the status-sync seam for FULFILLMENT_PROVIDER=partner). Pharmacy oversees it. */
+  router.post('/v1/orders/:id/partner-status', guards.requireRole('PHARMACY_ADMIN'), async (req, res) => {
+    const actor = getActor(res);
+    const { status } = parseBody(PartnerStatusSchema, req);
+    const orderId = z.string().min(1).parse(req.params.id);
+    const updated = await service.syncPartnerStatus({ id: actor.id, role: actor.role }, orderId, status);
     res.json(updated);
   });
 

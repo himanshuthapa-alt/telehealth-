@@ -3,6 +3,7 @@ import {
   generateTrackingId,
   isExpired,
   type CreateOrderRequest,
+  type FulfillmentSource,
   type Order,
   type OrderStatus,
   type Role,
@@ -11,6 +12,7 @@ import {
 import { AppError } from '../../platform/http/errors';
 import type { AuditLog } from '../audit/audit';
 import type { PrescriptionRepository } from '../prescriptions/prescriptions.repository';
+import { mapPartnerStatus } from './fulfillment.partner';
 import type { OrderRepository } from './orders.repository';
 
 export interface OrderServiceActor {
@@ -23,10 +25,18 @@ export interface OrderServiceDeps {
   prescriptions: PrescriptionRepository;
   audit: AuditLog;
   now?: () => Date;
+  /** Who fulfils orders: 'local' (pharmacy queue) or 'partner' (external). */
+  fulfillmentProvider?: FulfillmentSource;
 }
 
-export function createOrderService({ repo, prescriptions, audit, now = () => new Date() }: OrderServiceDeps) {
-  return {
+export function createOrderService({
+  repo,
+  prescriptions,
+  audit,
+  now = () => new Date(),
+  fulfillmentProvider = 'local',
+}: OrderServiceDeps) {
+  const service = {
     async createOrder(actor: OrderServiceActor, request: CreateOrderRequest): Promise<Order> {
       if (actor.role !== 'PATIENT') {
         throw new AppError(403, 'FORBIDDEN', 'Only patients can create orders');
@@ -258,7 +268,30 @@ export function createOrderService({ repo, prescriptions, audit, now = () => new
       }
       return order;
     },
+
+    /**
+     * Apply a status event from the external delivery partner. Maps the partner's
+     * status onto our state machine and applies it through the normal, guarded
+     * update path (the pharmacy admin oversees partner orders), so history is
+     * recorded and `canTransitionOrder` rejects any out-of-order event.
+     */
+    async syncPartnerStatus(actor: OrderServiceActor, orderId: string, rawStatus: string): Promise<Order> {
+      if (fulfillmentProvider !== 'partner') {
+        throw new AppError(409, 'INVALID_STATE', 'Partner fulfillment is not enabled');
+      }
+      const mapped = mapPartnerStatus(rawStatus);
+      if (!mapped) {
+        throw new AppError(400, 'VALIDATION_FAILED', `Unknown partner status: ${rawStatus}`);
+      }
+      return service.updateOrderStatus(actor, orderId, {
+        status: mapped,
+        note: `partner: ${rawStatus}`,
+        cancelReason: mapped === 'CANCELLED' ? `partner: ${rawStatus}` : undefined,
+      });
+    },
   };
+
+  return service;
 }
 
 export type OrderService = ReturnType<typeof createOrderService>;

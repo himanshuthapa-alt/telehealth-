@@ -11,6 +11,10 @@ export type OrderStatus = (typeof ORDER_STATUSES)[number];
 export const PAYMENT_METHODS = ['CASH_ON_DELIVERY'] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
+/** Who fulfils an order: the in-house pharmacy queue, or an external partner (e.g. 1mg). */
+export const FULFILLMENT_PROVIDERS = ['local', 'partner'] as const;
+export type FulfillmentSource = (typeof FULFILLMENT_PROVIDERS)[number];
+
 export const PAYMENT_STATUSES = ['PENDING', 'PAID'] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 

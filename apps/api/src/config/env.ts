@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { DOCTOR_SOURCES } from '@telecare/shared';
+import { DOCTOR_SOURCES, FULFILLMENT_PROVIDERS } from '@telecare/shared';
 
 const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -15,6 +15,8 @@ const EnvSchema = z.object({
   TTS_BASE_URL: z.url().default('http://localhost:4123'),
   /** local = Postgres doctor directory; practo = external partner (stub until credentials exist). */
   DOCTOR_PROVIDER: z.enum(DOCTOR_SOURCES).default('local'),
+  /** local = in-house pharmacy queue; partner = external delivery partner (stub until credentials exist). */
+  FULFILLMENT_PROVIDER: z.enum(FULFILLMENT_PROVIDERS).default('local'),
 });
 
 export type Config = z.infer<typeof EnvSchema>;

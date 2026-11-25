@@ -38,6 +38,7 @@ const app = createApp({
   video: config.VIDEO_PROVIDER === 'fake' ? createFakeVideoProvider() : null,
   ttsBaseUrl: config.TTS_BASE_URL,
   doctorProvider: config.DOCTOR_PROVIDER,
+  fulfillmentProvider: config.FULFILLMENT_PROVIDER,
 });
 
 // Close consultations whose join window has passed.

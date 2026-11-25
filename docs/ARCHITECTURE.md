@@ -46,6 +46,14 @@ Discovery talks to the `DoctorDirectoryProvider` port (`search`, `get`). `DOCTOR
 
 To switch Practo on: a partner agreement with Practo, API credentials (added as new env vars, documented in `.env.example`), and a field mapping from their doctor/slot shape to `DoctorCard` / `DoctorDetail`. Booking and cancellation would route to the partner for `source: 'practo'` doctors while local bookings keep the existing Postgres path.
 
+## Delivery partner (1mg-ready)
+
+`FULFILLMENT_PROVIDER` picks who fulfils orders: `local` (default; the in-house pharmacy queue — `orders.service` + the pharmacy routes — unchanged, so it is the local adapter) or `partner` (an external delivery partner such as Tata 1mg). `fulfillment.ts` is the `FulfillmentProvider` port (check availability/price, place, status, cancel); `fulfillment.partner.ts` is the stub that fails with a typed `503 SERVICE_UNAVAILABLE` until credentials exist.
+
+Status-sync: `mapPartnerStatus` maps the partner's status vocabulary onto our `OrderStatus`; unknown strings map to null and are ignored. `orders.service.syncPartnerStatus` (behind `POST /v1/orders/:id/partner-status`, pharmacy-admin) applies a mapped status through the normal update path, so `canTransitionOrder` rejects any out-of-order event and the history timeline is written as usual. Cash on Delivery stays the only payment method, and prescription-only medicines still require an issued prescription (enforced in `createOrder`, provider-agnostic), whichever provider runs.
+
+To switch the partner on: a partner agreement + API credentials (new env vars in `.env.example`), a field mapping to `OrderItem`/`Order`, and implementing the `FulfillmentProvider` methods against their API.
+
 ## Shared (`packages/shared`)
 
 `ROLES`, `ERROR_CODES`, `ApiErrorBody` + guard, `HealthResponse`, auth request/response types, `normalizePhone`, `passwordProblem`. The contract between the app and the API; the two rule functions run on both sides.
