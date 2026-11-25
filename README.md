@@ -26,3 +26,7 @@ npm run check        # format + lint + typecheck + all tests
 ```
 
 Full setup: [docs/SETUP.md](docs/SETUP.md). Plan and decisions: [docs/BLUEPRINT.md](docs/BLUEPRINT.md).
+
+## License
+
+MIT. See [LICENSE](LICENSE). Never commit API keys or real `.env` files; secrets live only in server-side environment variables.
