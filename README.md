@@ -21,8 +21,13 @@ cp apps/api/.env.example apps/api/.env
 npm run db:migrate
 npm run db:seed      # demo patient, doctor and pharmacy accounts
 npm run dev:api      # http://localhost:4000/health
-npm run dev:mobile   # Expo; press "a" for Android
+npm run dev:mobile   # Expo Go QR code, Android emulator, or press "w" for web
+npm run dev:android  # open Android emulator explicitly in Expo Go
+npm run dev:web      # open the web app directly in a browser
+npm run build:web    # export the production web app to apps/mobile/dist
 npm run check        # format + lint + typecheck + all tests
 ```
+
+For laptop phone-size preview, open the web app and use the browser's device toolbar (Ctrl+Shift+M in Edge/Chrome). For a physical Android phone, install an Expo Go build compatible with SDK 58 and scan the QR code; the phone and laptop should be on the same Wi-Fi. See [device and browser setup](docs/SETUP.md#run-on-web-and-mobile-devices).
 
 Full setup: [docs/SETUP.md](docs/SETUP.md). Plan and decisions: [docs/BLUEPRINT.md](docs/BLUEPRINT.md).

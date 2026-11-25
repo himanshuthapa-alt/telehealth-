@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import {
   checkEmergencyKeywords,
   EMERGENCY_NUMBERS,
@@ -8,6 +9,33 @@ import {
   type TriageUrgency,
 } from '@telecare/shared';
 import { api } from '@/lib/api';
+import { deleteRecording } from './delete-recording';
+
+export interface TranscriptionResult {
+  text: string;
+  language: string | null;
+  confidence: number;
+}
+
+/** Uploads a short clip to the TeleCare API; the local recording is deleted afterward. */
+export async function transcribeAudio(uri: string): Promise<TranscriptionResult> {
+  const form = new FormData();
+  try {
+    if (Platform.OS === 'web') {
+      const response = await fetch(uri);
+      if (!response.ok) throw new Error('The recording could not be read.');
+      const blob = await response.blob();
+      const extension = blob.type.includes('webm') ? 'webm' : 'm4a';
+      form.append('audio', blob, `bolo.${extension}`);
+    } else {
+      form.append('audio', { uri, name: 'bolo.m4a', type: 'audio/mp4' } as unknown as Blob);
+    }
+
+    return await api.postForm<TranscriptionResult>('/v1/triage/transcribe', form, { timeoutMs: 45_000 });
+  } finally {
+    await deleteRecording(uri);
+  }
+}
 
 /**
  * Offline rule-based fallback if network/server is unavailable.

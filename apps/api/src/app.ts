@@ -4,6 +4,7 @@ import type { Logger } from './platform/logger';
 import { createAccessTokens, createAuthGuards } from './platform/http/auth';
 import { errorHandler, notFoundHandler } from './platform/http/errors';
 import { requestContext } from './platform/http/request-context';
+import { webCors } from './platform/http/web-cors';
 import { healthRoutes } from './modules/health/health.routes';
 import { createAuditLog } from './modules/audit/audit';
 import { createRefreshTokenRepository, createResetCodeRepository } from './modules/auth/auth.repository';
@@ -39,6 +40,12 @@ import { createOrderService } from './modules/orders/orders.service';
 import { orderRoutes } from './modules/orders/orders.routes';
 import { createTriageService } from './modules/triage/triage.service';
 import { triageRoutes } from './modules/triage/triage.routes';
+import { createVoiceService } from './modules/triage/voice.service';
+import { voiceRoutes } from './modules/triage/voice.routes';
+import { createUrgentRequestRepository } from './modules/urgent/urgent.repository';
+import { createUrgentRequestService } from './modules/urgent/urgent.service';
+import { urgentRequestRoutes } from './modules/urgent/urgent.routes';
+import { createRequestBudget } from './platform/providers/request-budget';
 import { addDays, istInstant } from '@telecare/shared';
 
 export interface AppDeps {
@@ -53,7 +60,15 @@ export interface AppDeps {
   /** null = consultations run in chat only. */
   video: VideoProvider | null;
   groqApiKey?: string;
+  whisperModel?: string;
   triageModel?: string;
+  externalServicesMode?: 'test' | 'live';
+  googleTtsApiKey?: string;
+  sarvamApiKey?: string;
+  groqDailyRequestLimit?: number;
+  groqBudgetWarningRatio?: number;
+  allowAnyWebOrigin?: boolean;
+  webOrigins?: readonly string[];
 }
 
 /**
@@ -67,6 +82,7 @@ export function createApp(deps: AppDeps) {
   app.set('trust proxy', 1);
 
   app.use(requestContext(deps.logger));
+  app.use(webCors({ allowAnyOrigin: deps.allowAnyWebOrigin, allowedOrigins: deps.webOrigins }));
   app.use(express.json({ limit: '100kb' }));
 
   const repos = (db: Parameters<typeof createAuditLog>[0]): AuthRepos => ({
@@ -147,9 +163,39 @@ export function createApp(deps: AppDeps) {
   app.use(orderRoutes(orderService, guards));
   const triageService = createTriageService({
     groqApiKey: deps.groqApiKey,
+    whisperModel: deps.whisperModel,
     modelName: deps.triageModel,
+    externalServicesMode: deps.externalServicesMode ?? 'test',
+    groqBudget: createRequestBudget({
+      dailyLimit: deps.groqDailyRequestLimit ?? 300,
+      warningRatio: deps.groqBudgetWarningRatio ?? 0.8,
+      onWarning: (usage) =>
+        deps.logger.warn('Groq daily request budget warning', {
+          provider: 'groq',
+          used: usage.used,
+          limit: usage.limit,
+          ratio: Number(usage.ratio.toFixed(2)),
+        }),
+    }),
   });
   app.use(triageRoutes(triageService));
+  app.use(
+    voiceRoutes(
+      createVoiceService({
+        googleApiKey: deps.googleTtsApiKey,
+        sarvamApiKey: deps.sarvamApiKey,
+        externalServicesMode: deps.externalServicesMode ?? 'test',
+      }),
+    ),
+  );
+  const urgentRequests = createUrgentRequestService({
+    repo: createUrgentRequestRepository(deps.db),
+    triage: triageService,
+    audit: createAuditLog(deps.db),
+    now,
+  });
+  app.locals.sweepUrgentRequests = urgentRequests.sweep;
+  app.use(urgentRequestRoutes(urgentRequests, guards));
 
   app.use(notFoundHandler);
   app.use(errorHandler(deps.logger));

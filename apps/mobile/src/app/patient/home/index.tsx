@@ -9,6 +9,7 @@ import { openRoom } from '@/features/consultation/JoinButton';
 import { SPECIALTY } from '@/features/doctors/specialties';
 import { ICONS } from '@/features/shell/icons';
 import { BoloAssistantModal } from '@/features/triage/BoloAssistantModal';
+import { UrgentRequestTracker } from '@/features/triage/UrgentRequestTracker';
 import { useSession } from '@/lib/api';
 import { useNow } from '@/lib/use-now';
 import { AppText, Button, Card, Icon, Screen, Tile, TileGrid, colors, radius, spacing } from '@/ui';
@@ -64,6 +65,10 @@ export default function Home() {
             />
           )}
         </View>
+      )}
+
+      {state.status === 'signedIn' && (
+        <UrgentRequestTracker patientId={state.user.id} refreshSignal={boloVisible} />
       )}
 
       <Button
@@ -128,7 +133,11 @@ export default function Home() {
         </Card>
       )}
 
-      <BoloAssistantModal visible={boloVisible} onClose={() => setBoloVisible(false)} />
+      <BoloAssistantModal
+        patientId={state.status === 'signedIn' ? state.user.id : ''}
+        visible={boloVisible}
+        onClose={() => setBoloVisible(false)}
+      />
     </Screen>
   );
 }

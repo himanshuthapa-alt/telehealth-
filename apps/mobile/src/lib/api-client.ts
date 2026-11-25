@@ -59,6 +59,7 @@ export function createApiClient({ baseUrl, timeoutMs = 15_000, fetchImpl = fetch
 
   async function send<T>(path: string, init: RequestInit, opts: RequestOptions): Promise<T> {
     const token = auth?.accessToken();
+    const isFormData = typeof FormData !== 'undefined' && init.body instanceof FormData;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), opts.timeoutMs ?? timeoutMs);
     // The caller can cancel too (e.g. a long poll when the screen closes).
@@ -69,7 +70,7 @@ export function createApiClient({ baseUrl, timeoutMs = 15_000, fetchImpl = fetch
         ...init,
         headers: {
           Accept: 'application/json',
-          'Content-Type': 'application/json',
+          ...(!isFormData && { 'Content-Type': 'application/json' }),
           ...(token && { Authorization: `Bearer ${token}` }),
           ...init.headers,
         },
@@ -105,6 +106,8 @@ export function createApiClient({ baseUrl, timeoutMs = 15_000, fetchImpl = fetch
         body: body === undefined ? undefined : JSON.stringify(body),
         headers,
       }),
+    postForm: <T>(path: string, body: FormData, opts?: RequestOptions) =>
+      request<T>(path, { method: 'POST', body }, opts),
     patch: <T>(path: string, body: unknown) =>
       request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
     put: <T>(path: string, body: unknown) => request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),

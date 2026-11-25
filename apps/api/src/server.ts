@@ -37,7 +37,17 @@ const app = createApp({
   // ponytail: no real video vendor yet (needs an account + a native app build); see docs/ARCHITECTURE.md
   video: config.VIDEO_PROVIDER === 'fake' ? createFakeVideoProvider() : null,
   groqApiKey: config.GROQ_API_KEY,
+  whisperModel: config.GROQ_WHISPER_MODEL,
   triageModel: config.TRIAGE_MODEL,
+  externalServicesMode: config.EXTERNAL_SERVICES_MODE,
+  googleTtsApiKey: config.GOOGLE_TTS_API_KEY,
+  sarvamApiKey: config.SARVAM_API_KEY,
+  groqDailyRequestLimit: config.GROQ_DAILY_REQUEST_LIMIT,
+  groqBudgetWarningRatio: config.GROQ_BUDGET_WARNING_RATIO,
+  allowAnyWebOrigin: config.NODE_ENV === 'development',
+  webOrigins: config.WEB_ORIGINS.split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
 });
 
 // Close consultations whose join window has passed.
@@ -46,6 +56,12 @@ const sweep = app.locals.sweepConsultations as SweepConsultations;
 setInterval(() => {
   sweep().catch((err: Error) => logger.error('consultation sweep failed', { error: err.message }));
 }, 60_000).unref();
+const sweepUrgentRequests = app.locals.sweepUrgentRequests as (now?: Date) => Promise<number>;
+setInterval(() => {
+  sweepUrgentRequests().catch((err: Error) =>
+    logger.error('urgent request escalation failed', { error: err.message }),
+  );
+}, 15_000).unref();
 const server = app.listen(config.PORT, config.HOST, () => {
   logger.info('api listening', { url: `http://localhost:${config.PORT}`, env: config.NODE_ENV });
 });
