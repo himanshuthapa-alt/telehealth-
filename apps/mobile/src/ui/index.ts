@@ -15,5 +15,6 @@ export * from './ErrorState';
 export * from './QueryState';
 export * from './Avatar';
 export * from './Icon';
+export * from './MicButton';
 export * from './Tile';
 export * from './Token';

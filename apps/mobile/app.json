@@ -39,7 +39,16 @@
       "expo-font",
       "expo-image",
       "expo-status-bar",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-audio",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow TeleCare+ to use the microphone for voice navigation.",
+          "speechRecognitionPermission": "Allow TeleCare+ to recognize your speech for voice navigation.",
+          "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox"]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

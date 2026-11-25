@@ -36,8 +36,7 @@ const app = createApp({
   resetCodeDelivery: createLogResetCodeDelivery(logger),
   // ponytail: no real video vendor yet (needs an account + a native app build); see docs/ARCHITECTURE.md
   video: config.VIDEO_PROVIDER === 'fake' ? createFakeVideoProvider() : null,
-  groqApiKey: config.GROQ_API_KEY,
-  triageModel: config.TRIAGE_MODEL,
+  ttsBaseUrl: config.TTS_BASE_URL,
 });
 
 // Close consultations whose join window has passed.

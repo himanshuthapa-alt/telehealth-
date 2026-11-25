@@ -43,6 +43,7 @@ export function testApp(overrides: Partial<AppDeps> = {}) {
     jwtSecret: TEST_JWT_SECRET,
     resetCodeDelivery: { send: async (phone, code) => void sentCodes.set(phone, code) },
     video: createFakeVideoProvider(),
+    ttsBaseUrl: 'http://localhost:4123',
     ...overrides,
   });
   return { app, sentCodes };

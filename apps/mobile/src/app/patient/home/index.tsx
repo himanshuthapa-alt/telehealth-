@@ -8,7 +8,7 @@ import { useAppointments } from '@/features/appointments/appointment-queries';
 import { openRoom } from '@/features/consultation/JoinButton';
 import { SPECIALTY } from '@/features/doctors/specialties';
 import { ICONS } from '@/features/shell/icons';
-import { BoloAssistantModal } from '@/features/triage/BoloAssistantModal';
+import { VoiceAssistantModal } from '@/features/voice/VoiceAssistantModal';
 import { useSession } from '@/lib/api';
 import { useNow } from '@/lib/use-now';
 import { AppText, Button, Card, Icon, Screen, Tile, TileGrid, colors, radius, spacing } from '@/ui';
@@ -74,7 +74,7 @@ export default function Home() {
       />
 
       <Button
-        label="बोलो / Bolo — Voice Doctor Search"
+        label="बोलो / Bolo — Voice Assistant"
         variant="secondary"
         icon={ICONS.mic}
         onPress={() => setBoloVisible(true)}
@@ -128,7 +128,7 @@ export default function Home() {
         </Card>
       )}
 
-      <BoloAssistantModal visible={boloVisible} onClose={() => setBoloVisible(false)} />
+      <VoiceAssistantModal visible={boloVisible} onClose={() => setBoloVisible(false)} />
     </Screen>
   );
 }

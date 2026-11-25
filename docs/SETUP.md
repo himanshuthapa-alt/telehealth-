@@ -37,6 +37,20 @@ The app finds the API on the same machine that serves the JS bundle (port 4000),
 
 `VIDEO_PROVIDER` in `apps/api/.env`: `fake` (default; rooms and tokens without real video, the app says "Video demo mode") or `none` (chat-only consultations). A real provider needs a vendor account and a native build; see ARCHITECTURE.md.
 
+## Voice (speech navigation)
+
+Voice navigation lets a non-technical user drive the patient app by speaking (English/Hindi/Hinglish).
+
+- **Speech-to-text needs a native dev build.** On-device recognition uses `expo-speech-recognition`, which Expo Go cannot load. Build and install the dev client once:
+
+  ```sh
+  npm run android -w @telecare/mobile    # expo run:android — builds, installs, needs Android SDK + NDK
+  ```
+
+  On an emulator, enable the host mic (`adb emu avd hostmicon`) and route your computer's microphone to it. A real phone is more reliable than the emulator for voice.
+
+- **Text-to-speech (Chatterbox).** Spoken replies come from a self-hosted Chatterbox TTS service (OpenAI-compatible `/v1/audio/speech`). Run it in Docker on port 4123; the API reaches it via `TTS_BASE_URL` (default `http://localhost:4123`) and the app only ever calls the API's `GET /v1/speech`. On CPU-only machines the first phrases are slow (tens of seconds) — expected; navigation never waits on it.
+
 ## Troubleshooting
 
 - **App says "Could not reach the server":** API not running, or phone on a different network.

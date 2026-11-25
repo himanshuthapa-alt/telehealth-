@@ -7,3 +7,4 @@ apps/mobile/ios
 apps/api/migrations/meta
 package-lock.json
 apps/mobile/assets
+apps/mobile/expo-env.d.ts

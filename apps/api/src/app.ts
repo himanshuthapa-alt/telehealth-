@@ -37,8 +37,7 @@ import { createPrescriptionService } from './modules/prescriptions/prescriptions
 import { createOrderRepository } from './modules/orders/orders.repository';
 import { createOrderService } from './modules/orders/orders.service';
 import { orderRoutes } from './modules/orders/orders.routes';
-import { createTriageService } from './modules/triage/triage.service';
-import { triageRoutes } from './modules/triage/triage.routes';
+import { speechRoutes } from './modules/speech/speech.routes';
 import { addDays, istInstant } from '@telecare/shared';
 
 export interface AppDeps {
@@ -52,8 +51,8 @@ export interface AppDeps {
   now?: () => Date;
   /** null = consultations run in chat only. */
   video: VideoProvider | null;
-  groqApiKey?: string;
-  triageModel?: string;
+  /** Chatterbox TTS service base URL for voice output. */
+  ttsBaseUrl: string;
 }
 
 /**
@@ -145,11 +144,7 @@ export function createApp(deps: AppDeps) {
     now,
   });
   app.use(orderRoutes(orderService, guards));
-  const triageService = createTriageService({
-    groqApiKey: deps.groqApiKey,
-    modelName: deps.triageModel,
-  });
-  app.use(triageRoutes(triageService));
+  app.use(speechRoutes(deps.ttsBaseUrl));
 
   app.use(notFoundHandler);
   app.use(errorHandler(deps.logger));

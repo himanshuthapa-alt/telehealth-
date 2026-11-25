@@ -3,7 +3,7 @@
 College minor project: a mobile-first telemedicine + e-pharmacy app.
 Journey: **discover → book → consult → prescribe → order → track**.
 
-**Status:** Phase 8 (Orders & Pharmacy) complete. During or up to 24 h after a consultation the doctor writes a prescription from the medicine catalog (or free text), issues it, and it appears in the chat as a card and in the patient's Medicines tab. Patients can build an order directly from the prescription with Cash on Delivery (COD), tracking each order via Crockford Base32 tracking IDs (`TC-XXXX-XXXX`) and a real-time status timeline. Pharmacy staff manage incoming orders and inventory directly through the app queue. Also includes Phase 7.5 Bolo voice & symptom triage with emergency red-flag warnings.
+**Status:** Phase 8 (Orders & Pharmacy) complete. During or up to 24 h after a consultation the doctor writes a prescription from the medicine catalog (or free text), issues it, and it appears in the chat as a card and in the patient's Medicines tab. Patients can build an order directly from the prescription with Cash on Delivery (COD), tracking each order via Crockford Base32 tracking IDs (`TC-XXXX-XXXX`) and a real-time status timeline. Pharmacy staff manage incoming orders and inventory directly through the app queue. Voice navigation (Phase A–B) lets low-literacy patients drive the app by speaking in English/Hindi/Hinglish: on-device speech-to-text, a rule-based intent parser, and spoken replies via a self-hosted Chatterbox TTS service. The earlier Groq symptom-triage feature has been removed.
 
 | Path              | What                                                         |
 | ----------------- | ------------------------------------------------------------ |

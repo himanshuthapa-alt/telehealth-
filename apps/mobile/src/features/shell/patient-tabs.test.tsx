@@ -72,7 +72,10 @@ beforeEach(() => {
       Promise.resolve(
         path.startsWith('/v1/doctors')
           ? { items: [], page: 1, pageSize: 20, total: 0 }
-          : path.startsWith('/v1/appointments') || path.startsWith('/v1/prescriptions')
+          : path.startsWith('/v1/appointments') ||
+              path.startsWith('/v1/prescriptions') ||
+              path.startsWith('/v1/medicines') ||
+              path.startsWith('/v1/orders')
             ? []
             : PROFILE,
       ),
@@ -114,16 +117,15 @@ describe('patient tabs', () => {
     expect(await screen.findByText('No past bookings.')).toBeOnTheScreen();
   });
 
-  it('Medicines: each of the four segments has an empty state', async () => {
+  it('Medicines: each segment has an empty state', async () => {
     await renderScreen(<Medicines />);
     expect(screen.getByText('No prescriptions yet.')).toBeOnTheScreen();
     for (const [tab, text] of [
-      ['Catalog', 'The medicine catalog opens soon.'],
-      ['Cart', 'Your cart is empty.'],
-      ['Orders', 'No orders yet.'],
+      ['Catalog', 'No medicines found.'],
+      ['Orders', 'No medicine orders yet.'],
     ] as const) {
       await userEvent.press(screen.getByRole('tab', { name: tab }));
-      expect(screen.getByText(text)).toBeOnTheScreen();
+      expect(await screen.findByText(text)).toBeOnTheScreen();
     }
   });
 
