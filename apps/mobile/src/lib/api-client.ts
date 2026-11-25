@@ -34,7 +34,8 @@ export interface RequestOptions {
 }
 
 export interface ApiClientOptions {
-  baseUrl: string;
+  /** A URL, or a resolver called per request (so a runtime server change is picked up). */
+  baseUrl: string | (() => string);
   timeoutMs?: number;
   fetchImpl?: typeof fetch;
   auth?: ClientAuth;
@@ -65,7 +66,8 @@ export function createApiClient({ baseUrl, timeoutMs = 15_000, fetchImpl = fetch
     opts.signal?.addEventListener('abort', () => controller.abort());
     let res: Response;
     try {
-      res = await fetchImpl(`${baseUrl}${path}`, {
+      const base = typeof baseUrl === 'function' ? baseUrl() : baseUrl;
+      res = await fetchImpl(`${base}${path}`, {
         ...init,
         headers: {
           Accept: 'application/json',
@@ -97,7 +99,9 @@ export function createApiClient({ baseUrl, timeoutMs = 15_000, fetchImpl = fetch
   }
 
   return {
-    baseUrl,
+    get baseUrl() {
+      return typeof baseUrl === 'function' ? baseUrl() : baseUrl;
+    },
     get: <T>(path: string, opts?: RequestOptions) => request<T>(path, {}, opts),
     post: <T = void>(path: string, body?: unknown, headers?: Record<string, string>) =>
       request<T>(path, {

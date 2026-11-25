@@ -4,7 +4,9 @@ import { createApiClient } from './api-client';
 import { resolveApiBaseUrl } from './config';
 import { createSession, type TokenStorage } from './session';
 
-const baseUrl = resolveApiBaseUrl();
+// Resolved per request so a server URL changed inside the app takes effect
+// without a restart (see resolveApiBaseUrl).
+const baseUrl = () => resolveApiBaseUrl();
 
 // Android Keystore / iOS Keychain, never plain AsyncStorage (blueprint §16).
 const secureStorage: TokenStorage = {

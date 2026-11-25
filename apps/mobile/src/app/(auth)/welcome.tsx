@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { ICONS } from '@/features/shell/icons';
-import { AppText, Button, Icon, Screen, colors, radius, spacing } from '@/ui';
+import { resolveApiBaseUrl, setStoredApiBaseUrl } from '@/lib/config';
+import { AppText, Button, Icon, Screen, TextField, colors, radius, spacing } from '@/ui';
 
 // A real sequence, so the steps are numbered.
 const STEPS = [
@@ -41,7 +43,54 @@ export default function Welcome() {
         icon={ICONS.login}
         onPress={() => router.push('/login')}
       />
+
+      <ServerSetting />
     </Screen>
+  );
+}
+
+/**
+ * Lets the user point the app at the current server URL (e.g. a changed tunnel
+ * address) without needing a new build. Collapsed by default so it stays out of
+ * the way for everyone else.
+ */
+function ServerSetting() {
+  const [open, setOpen] = useState(false);
+  const [url, setUrl] = useState(resolveApiBaseUrl);
+  const [saved, setSaved] = useState(false);
+
+  if (!open) {
+    return (
+      <View style={styles.serverRow}>
+        <AppText variant="caption" color="textMuted" onPress={() => setOpen(true)}>
+          Server settings
+        </AppText>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.serverBox}>
+      <TextField
+        label="Server URL"
+        value={url}
+        onChangeText={(t) => {
+          setUrl(t);
+          setSaved(false);
+        }}
+        autoCapitalize="none"
+        autoCorrect={false}
+        keyboardType="url"
+        hint={saved ? 'Saved. It applies on your next action.' : 'e.g. https://xxxx.trycloudflare.com'}
+      />
+      <Button
+        label="Save server"
+        onPress={() => {
+          void setStoredApiBaseUrl(url);
+          setSaved(true);
+        }}
+      />
+    </View>
   );
 }
 
@@ -66,4 +115,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  serverRow: { alignItems: 'center', paddingTop: spacing.md },
+  serverBox: { gap: spacing.sm, paddingTop: spacing.md },
 });

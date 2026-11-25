@@ -4,6 +4,7 @@ import { Stack, type ErrorBoundaryProps } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { session, useSession } from '@/lib/api';
+import { loadStoredApiBaseUrl } from '@/lib/config';
 import { connectQueryClient, persistOptions, queryClient } from '@/lib/query';
 import { AppText, Button, Screen, colors } from '@/ui';
 
@@ -18,7 +19,8 @@ export default function RootLayout() {
   const state = useSession();
 
   useEffect(() => {
-    void session.restore();
+    // Load any saved server URL first, so the restore request uses it.
+    void loadStoredApiBaseUrl().then(() => session.restore());
     return connectQueryClient();
   }, []);
   useEffect(() => {
