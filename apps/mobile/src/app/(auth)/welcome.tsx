@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { ICONS } from '@/features/shell/icons';
+import { session } from '@/lib/api';
 import { resolveApiBaseUrl, setStoredApiBaseUrl } from '@/lib/config';
 import { AppText, Button, Icon, Screen, TextField, colors, radius, spacing } from '@/ui';
 
@@ -58,6 +59,21 @@ function ServerSetting() {
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState(resolveApiBaseUrl);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
+
+  const save = async () => {
+    const before = resolveApiBaseUrl();
+    const ok = await setStoredApiBaseUrl(url);
+    if (!ok) {
+      setError('Enter a valid http:// or https:// address');
+      setSaved(false);
+      return;
+    }
+    // Host changed: drop any logged-in session so a token is never sent to a new server.
+    if (resolveApiBaseUrl() !== before) await session.logout().catch(() => undefined);
+    setError('');
+    setSaved(true);
+  };
 
   if (!open) {
     return (
@@ -81,15 +97,10 @@ function ServerSetting() {
         autoCapitalize="none"
         autoCorrect={false}
         keyboardType="url"
+        error={error || undefined}
         hint={saved ? 'Saved. It applies on your next action.' : 'e.g. https://xxxx.trycloudflare.com'}
       />
-      <Button
-        label="Save server"
-        onPress={() => {
-          void setStoredApiBaseUrl(url);
-          setSaved(true);
-        }}
-      />
+      <Button label="Save server" onPress={() => void save()} />
     </View>
   );
 }

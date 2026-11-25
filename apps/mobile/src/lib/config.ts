@@ -45,14 +45,39 @@ export async function loadStoredApiBaseUrl(): Promise<void> {
   }
 }
 
-/** Save (or clear, with null) the server URL. Takes effect on the next request. */
-export async function setStoredApiBaseUrl(url: string | null): Promise<void> {
-  const clean = url?.trim().replace(/\/+$/, '') || undefined;
+/** True if `url` is a parseable http(s) URL (rejects javascript:, file:, garbage). */
+export function isValidServerUrl(url: string): boolean {
+  try {
+    const u = new URL(url.trim());
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Save (or clear, with null) the server URL. Returns false if the URL is not a
+ * valid http(s) address. Takes effect on the next request. The caller must drop
+ * any logged-in session when the host changes, so a token is never sent to a
+ * new server (see the welcome screen).
+ */
+export async function setStoredApiBaseUrl(url: string | null): Promise<boolean> {
+  if (url === null) {
+    overrideUrl = undefined;
+    try {
+      await AsyncStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // Best-effort.
+    }
+    return true;
+  }
+  const clean = url.trim().replace(/\/+$/, '');
+  if (!isValidServerUrl(clean)) return false;
   overrideUrl = clean;
   try {
-    if (clean) await AsyncStorage.setItem(STORAGE_KEY, clean);
-    else await AsyncStorage.removeItem(STORAGE_KEY);
+    await AsyncStorage.setItem(STORAGE_KEY, clean);
   } catch {
     // Best-effort; the in-memory override still applies for this session.
   }
+  return true;
 }
