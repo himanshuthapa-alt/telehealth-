@@ -37,6 +37,7 @@ const app = createApp({
   // ponytail: no real video vendor yet (needs an account + a native app build); see docs/ARCHITECTURE.md
   video: config.VIDEO_PROVIDER === 'fake' ? createFakeVideoProvider() : null,
   ttsBaseUrl: config.TTS_BASE_URL,
+  doctorProvider: config.DOCTOR_PROVIDER,
 });
 
 // Close consultations whose join window has passed.

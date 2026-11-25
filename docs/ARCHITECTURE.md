@@ -40,6 +40,12 @@ apps/mobile (Expo) ──HTTP/JSON──▶ apps/api (Express) ──▶ Postgre
 - `ui/`: design tokens (`theme.ts`) and components: `Screen` (includes the offline banner), `AppText`, `Button`, `Card`, `TextField`, `Checkbox`, `Chip`, `SegmentedControl`, `Banner`, the §18 state set `Skeleton`, `EmptyState`, `ErrorState`, `OfflineBanner`, `QueryState`, and `MicButton` (large accessible voice control with idle/listening/thinking/speaking states, a listening pulse and a haptic tap).
 - `lib/`: `config.ts` finds the API URL. `api-client.ts` wraps fetch with a timeout, typed failures (`offline`, `timeout`, `http`) and one silent refresh-and-retry. `session.ts` holds login state: refresh token in secure storage, access token in memory, one shared refresh, and it stays signed in when offline. `api.ts` wires them together; `errors.ts` turns failures into user-facing text. `query.ts` is the TanStack Query cache: retries only offline/timeout/5xx, pauses offline and refetches on reconnect or app resume, cleared on logout. Only queries whose key starts with `doctors` (public directory data) are also saved to disk (AsyncStorage, 7 days, reset on each app version), so the doctor list works offline; everything else stays in memory.
 
+## Doctor network (Practo-ready)
+
+Discovery talks to the `DoctorDirectoryProvider` port (`search`, `get`). `DOCTOR_PROVIDER` picks the adapter: `local` (default; the Postgres directory, unchanged) or `practo` (`discovery.practo.ts`, a stub that fails with a typed `503 SERVICE_UNAVAILABLE` until credentials exist — it never scrapes Practo or calls undocumented endpoints). Every doctor carries `source: 'local' | 'practo'` so the app can show where a booking goes.
+
+To switch Practo on: a partner agreement with Practo, API credentials (added as new env vars, documented in `.env.example`), and a field mapping from their doctor/slot shape to `DoctorCard` / `DoctorDetail`. Booking and cancellation would route to the partner for `source: 'practo'` doctors while local bookings keep the existing Postgres path.
+
 ## Shared (`packages/shared`)
 
 `ROLES`, `ERROR_CODES`, `ApiErrorBody` + guard, `HealthResponse`, auth request/response types, `normalizePhone`, `passwordProblem`. The contract between the app and the API; the two rule functions run on both sides.

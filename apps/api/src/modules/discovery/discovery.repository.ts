@@ -25,6 +25,13 @@ export interface DoctorDirectory {
   get(id: string): Promise<DoctorDetail | null>;
 }
 
+/**
+ * The doctor-network port (blueprint D1). `createDoctorDirectory` below is the
+ * `local` Postgres adapter; `createPractoDirectory` is the external one. Which
+ * runs is chosen by `DOCTOR_PROVIDER` in app.ts.
+ */
+export type DoctorDirectoryProvider = DoctorDirectory;
+
 // Only public fields. registration_number is deliberately absent.
 const cardColumns = {
   id: users.id,
@@ -91,7 +98,7 @@ export function createDoctorDirectory(db: Database, now: () => Date = () => new 
 
       const total = rows[0]?.total ?? 0;
       return {
-        items: rows.map(({ total: _total, ...card }) => card),
+        items: rows.map(({ total: _total, ...card }) => ({ ...card, source: 'local' as const })),
         page,
         pageSize: DOCTOR_PAGE_SIZE,
         total,
@@ -104,7 +111,7 @@ export function createDoctorDirectory(db: Database, now: () => Date = () => new 
         .from(doctorProfiles)
         .innerJoin(users, eq(users.id, doctorProfiles.userId))
         .where(and(visible, eq(users.id, id)));
-      return row ?? null;
+      return row ? { ...row, source: 'local' as const } : null;
     },
   };
 }

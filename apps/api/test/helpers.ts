@@ -44,6 +44,7 @@ export function testApp(overrides: Partial<AppDeps> = {}) {
     resetCodeDelivery: { send: async (phone, code) => void sentCodes.set(phone, code) },
     video: createFakeVideoProvider(),
     ttsBaseUrl: 'http://localhost:4123',
+    doctorProvider: 'local',
     ...overrides,
   });
   return { app, sentCodes };

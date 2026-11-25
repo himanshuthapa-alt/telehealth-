@@ -14,6 +14,7 @@ import { createUsersRepository } from './modules/users/users.repository';
 import { createPatientProfileRepository } from './modules/users/patient-profile.repository';
 import { usersRoutes } from './modules/users/users.routes';
 import { createDoctorDirectory } from './modules/discovery/discovery.repository';
+import { createPractoDirectory } from './modules/discovery/discovery.practo';
 import { discoveryRoutes } from './modules/discovery/discovery.routes';
 import { createScheduleRepository } from './modules/scheduling/scheduling.repository';
 import { schedulingRoutes } from './modules/scheduling/scheduling.routes';
@@ -39,7 +40,7 @@ import { createOrderService } from './modules/orders/orders.service';
 import { orderRoutes } from './modules/orders/orders.routes';
 import { speechRoutes } from './modules/speech/speech.routes';
 import { voiceRoutes } from './modules/voice/voice.routes';
-import { addDays, istInstant } from '@telecare/shared';
+import { addDays, istInstant, type DoctorSource } from '@telecare/shared';
 
 export interface AppDeps {
   logger: Logger;
@@ -54,6 +55,8 @@ export interface AppDeps {
   video: VideoProvider | null;
   /** Chatterbox TTS service base URL for voice output. */
   ttsBaseUrl: string;
+  /** Which doctor directory to serve: 'local' (Postgres) or 'practo' (external stub). */
+  doctorProvider: DoctorSource;
 }
 
 /**
@@ -88,7 +91,8 @@ export function createApp(deps: AppDeps) {
   app.use(authRoutes(authService, guards));
   app.use(usersRoutes(createPatientProfileRepository(deps.db), guards));
   const now = deps.now ?? (() => new Date());
-  const directory = createDoctorDirectory(deps.db, now);
+  const directory =
+    deps.doctorProvider === 'practo' ? createPractoDirectory() : createDoctorDirectory(deps.db, now);
   const schedule = createScheduleRepository(deps.db);
   const appointmentRepo = createAppointmentRepository(deps.db, now);
   const slots = createSlotService({ schedule, busy: appointmentRepo.busy, now });

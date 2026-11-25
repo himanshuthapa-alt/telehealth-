@@ -11,6 +11,10 @@ export const DOCTOR_PAGE_SIZE = 20;
 export const DOCTOR_AVAILABILITY_FILTERS = ['today', 'week'] as const;
 export type DoctorAvailabilityFilter = (typeof DOCTOR_AVAILABILITY_FILTERS)[number];
 
+/** Where a doctor (and any booking made with them) comes from. */
+export const DOCTOR_SOURCES = ['local', 'practo'] as const;
+export type DoctorSource = (typeof DOCTOR_SOURCES)[number];
+
 /** One result in the doctor list: only what a card shows (small payloads, blueprint §17). */
 export interface DoctorCard {
   id: string;
@@ -26,6 +30,8 @@ export interface DoctorCard {
   photoUrl: string | null;
   /** Seeded demo data, shown with a DEMO label. */
   isDemo: boolean;
+  /** Which directory this doctor came from, so the app can show where a booking goes. */
+  source: DoctorSource;
 }
 
 /** GET /v1/doctors/:id. Never includes the registration number or other private fields. */

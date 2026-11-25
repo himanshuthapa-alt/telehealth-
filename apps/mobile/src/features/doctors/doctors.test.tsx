@@ -33,6 +33,7 @@ const doctor = (id: string, name: string, extra: Partial<DoctorCard> = {}): Doct
   ratingCount: 158,
   photoUrl: null,
   isDemo: true,
+  source: 'local',
   ...extra,
 });
 const page = (items: DoctorCard[], total = items.length, n = 1): Page<DoctorCard> => ({
