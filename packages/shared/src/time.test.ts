@@ -67,6 +67,11 @@ describe('prescription helpers', () => {
     expect(suggestQuantity('TWICE_A_DAY', 5)).toBe(10);
     expect(suggestQuantity('THREE_TIMES_A_DAY', 7)).toBe(21);
     expect(suggestQuantity('WHEN_NEEDED', 5)).toBe(10);
+    // With a catalog pack, the quantity is in packs (what the pharmacy sells and charges for).
+    expect(suggestQuantity('TWICE_A_DAY', 5, '5 ml', '60 ml bottle')).toBe(1);
+    expect(suggestQuantity('THREE_TIMES_A_DAY', 10, '1 tablet', '15 tablets')).toBe(2);
+    expect(suggestQuantity('TWICE_A_DAY', 7, '1/2 tablet', '10 tablets')).toBe(1);
+    expect(suggestQuantity('TWICE_A_DAY', 5, 'apply thinly', '30 g tube')).toBe(10); // no dose amount → doses
   });
   it('an issued prescription expires after its last valid day', () => {
     expect(isExpired({ status: 'ISSUED', validUntil: '2030-01-31' }, '2030-01-31')).toBe(false);

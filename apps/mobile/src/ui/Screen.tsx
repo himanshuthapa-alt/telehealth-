@@ -22,5 +22,6 @@ export function Screen({ children, edges = [] }: { children: ReactNode; edges?: 
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.md, gap: spacing.md },
+  // Extra room at the bottom so the last button can scroll clear of the floating mic button.
+  content: { padding: spacing.md, paddingBottom: 120, gap: spacing.md },
 });

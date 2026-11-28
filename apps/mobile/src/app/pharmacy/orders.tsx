@@ -118,7 +118,12 @@ export default function PharmacyOrders() {
                     Status: {ORDER_STATUS_LABELS[selectedOrder.status].label}
                   </AppText>
                 </View>
-                <Pressable onPress={() => setSelectedOrder(null)} hitSlop={12}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Close order details"
+                  onPress={() => setSelectedOrder(null)}
+                  hitSlop={12}
+                >
                   <Icon name={ICONS.cancel} size={28} color="textMuted" />
                 </Pressable>
               </View>

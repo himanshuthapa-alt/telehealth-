@@ -54,22 +54,23 @@ const newItem = (
   name: string,
   medicineId: string | null,
   form: MedicineForm = 'OTHER',
+  packSize: string | null = null,
 ): PrescriptionItemInput => ({
   medicineId,
   medicineName: name,
   dosage: DOSE_FOR[form],
   frequency: 'TWICE_A_DAY',
   durationDays: 5,
-  quantity: suggestQuantity('TWICE_A_DAY', 5),
+  quantity: suggestQuantity('TWICE_A_DAY', 5, DOSE_FOR[form], packSize),
   instructions: null,
 });
 
-function AddMedicine({ onAdd }: { onAdd: (item: PrescriptionItemInput) => void }) {
+function AddMedicine({ onAdd }: { onAdd: (item: PrescriptionItemInput, packSize: string | null) => void }) {
   const [text, setText] = useState('');
   const q = useDebouncedValue(text.trim(), 300);
   const results = useMedicineSearch(q);
-  const pick = (item: PrescriptionItemInput) => {
-    onAdd(item);
+  const pick = (item: PrescriptionItemInput, packSize: string | null = null) => {
+    onAdd(item, packSize);
     setText('');
   };
   return (
@@ -86,7 +87,7 @@ function AddMedicine({ onAdd }: { onAdd: (item: PrescriptionItemInput) => void }
           key={m.id}
           accessibilityRole="button"
           accessibilityLabel={`Add ${m.name}`}
-          onPress={() => pick(newItem(m.name, m.id, m.form))}
+          onPress={() => pick(newItem(m.name, m.id, m.form, m.packSize), m.packSize)}
           style={({ pressed }) => [styles.result, pressed && { backgroundColor: colors.primarySoft }]}
         >
           <AppText variant="label">{m.name}</AppText>
@@ -109,11 +110,14 @@ function AddMedicine({ onAdd }: { onAdd: (item: PrescriptionItemInput) => void }
 
 function ItemEditor({
   item,
+  packSize,
   index,
   onChange,
   onRemove,
 }: {
   item: PrescriptionItemInput;
+  /** Catalog pack, e.g. "60 ml bottle": the quantity is counted in these. */
+  packSize: string | null;
   index: number;
   onChange: (i: PrescriptionItemInput) => void;
   onRemove: () => void;
@@ -122,10 +126,10 @@ function ItemEditor({
     const next = { ...item, ...patch };
     // Keep the quantity in step with the course unless the doctor typed their own.
     if (
-      ('frequency' in patch || 'durationDays' in patch) &&
-      item.quantity === suggestQuantity(item.frequency, item.durationDays)
+      ('frequency' in patch || 'durationDays' in patch || 'dosage' in patch) &&
+      item.quantity === suggestQuantity(item.frequency, item.durationDays, item.dosage, packSize)
     )
-      next.quantity = suggestQuantity(next.frequency, next.durationDays);
+      next.quantity = suggestQuantity(next.frequency, next.durationDays, next.dosage, packSize);
     onChange(next);
   };
   return (
@@ -168,7 +172,7 @@ function ItemEditor({
         ))}
       </View>
       <TextField
-        label="Quantity to dispense"
+        label={packSize ? `Packs to dispense (${packSize} each)` : 'Quantity to dispense'}
         hint="Filled in from the dose and days. Change it if needed."
         keyboardType="number-pad"
         value={String(item.quantity)}
@@ -194,8 +198,9 @@ function ItemEditor({
 
 function Composer({ draft, consultationId }: { draft: Prescription; consultationId: string }) {
   const actions = usePrescriptionActions(consultationId);
+  const [packSizes, setPackSizes] = useState<(string | null)[]>(draft.items.map((i) => i.packSize));
   const [items, setItems] = useState<PrescriptionItemInput[]>(
-    draft.items.map(({ id: _id, inCatalog: _c, ...rest }) => rest),
+    draft.items.map(({ id: _id, inCatalog: _c, pricePaise: _p, packSize: _s, ...rest }) => rest),
   );
   const [advice, setAdvice] = useState(draft.generalInstructions ?? '');
   const [validDays, setValidDays] = useState(draft.validDays);
@@ -217,6 +222,7 @@ function Composer({ draft, consultationId }: { draft: Prescription; consultation
       )}
       {items.map((item, i) => (
         <ItemEditor
+          packSize={packSizes[i] ?? null}
           key={`${item.medicineName}-${i}`}
           item={item}
           index={i}
@@ -224,10 +230,18 @@ function Composer({ draft, consultationId }: { draft: Prescription; consultation
             setSaved(false);
             setItems((list) => list.map((x, j) => (j === i ? next : x)));
           }}
-          onRemove={() => setItems((list) => list.filter((_, j) => j !== i))}
+          onRemove={() => {
+            setItems((list) => list.filter((_, j) => j !== i));
+            setPackSizes((list) => list.filter((_, j) => j !== i));
+          }}
         />
       ))}
-      <AddMedicine onAdd={(item) => setItems((list) => [...list, item])} />
+      <AddMedicine
+        onAdd={(item, packSize) => {
+          setItems((list) => [...list, item]);
+          setPackSizes((list) => [...list, packSize]);
+        }}
+      />
       <TextField
         label="Advice for the patient (optional)"
         value={advice}

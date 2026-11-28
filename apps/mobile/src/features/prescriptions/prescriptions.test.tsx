@@ -42,6 +42,8 @@ const base: Prescription = {
       quantity: 10,
       instructions: 'After food',
       inCatalog: true,
+      pricePaise: 2500,
+      packSize: '10 tablets',
     },
     {
       id: 'i2',
@@ -53,6 +55,8 @@ const base: Prescription = {
       quantity: 1,
       instructions: null,
       inCatalog: false,
+      pricePaise: null,
+      packSize: null,
     },
   ],
   generalInstructions: 'Drink plenty of water.',
@@ -138,9 +142,11 @@ describe('doctor composer', () => {
     await userEvent.press(
       await screen.findByRole('button', { name: 'Add Paracetamol 500 mg' }, { timeout: 2000 }),
     );
-    expect(screen.getByDisplayValue('10')).toBeOnTheScreen(); // twice a day × 5 days
+    // Counted in packs of 15 tablets: twice a day × 5 days = 10 tablets = 1 pack.
+    expect(screen.getByLabelText('Packs to dispense (15 tablets each)')).toHaveDisplayValue('1');
     await userEvent.press(screen.getByRole('button', { name: 'Three times a day' }));
-    expect(screen.getByDisplayValue('15')).toBeOnTheScreen();
+    await userEvent.press(screen.getByRole('button', { name: '10 days' }));
+    expect(screen.getByDisplayValue('2')).toBeOnTheScreen(); // 30 tablets = 2 packs
     await userEvent.press(screen.getByRole('button', { name: 'After food' }));
 
     await userEvent.press(screen.getByRole('button', { name: 'Issue prescription' }));
@@ -154,8 +160,8 @@ describe('doctor composer', () => {
           medicineName: 'Paracetamol 500 mg',
           dosage: '1 tablet',
           frequency: 'THREE_TIMES_A_DAY',
-          durationDays: 5,
-          quantity: 15,
+          durationDays: 10,
+          quantity: 2,
           instructions: 'After food',
         },
       ],

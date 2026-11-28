@@ -1,3 +1,4 @@
+import { FREQUENCIES } from '@telecare/shared';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -106,12 +107,11 @@ export default function OrderBuilder() {
             {(rx) => {
               const availableItems = rx.items.filter((i) => i.medicineId);
               const unavailableItems = rx.items.filter((i) => !i.medicineId);
-              const ESTIMATED_UNIT_PRICE_PAISE = 6000;
-
+              // Catalog price per pack: the same number the server charges.
               let subtotalPaise = 0;
               for (const i of availableItems) {
                 const qty = quantities[i.id] ?? i.quantity;
-                subtotalPaise += ESTIMATED_UNIT_PRICE_PAISE * qty;
+                subtotalPaise += (i.pricePaise ?? 0) * qty;
               }
 
               return (
@@ -126,17 +126,19 @@ export default function OrderBuilder() {
                           <View style={{ flex: 1 }}>
                             <AppText variant="label">{item.medicineName}</AppText>
                             <AppText color="textMuted">
-                              {item.dosage} · {item.frequency} for {item.durationDays} days
+                              {item.dosage} · {FREQUENCIES[item.frequency].label.toLowerCase()} for{' '}
+                              {item.durationDays} days
                             </AppText>
                           </View>
                           <AppText variant="label" style={{ fontWeight: '800' }}>
-                            ₹{((currentQty * ESTIMATED_UNIT_PRICE_PAISE) / 100).toFixed(0)}
+                            ₹{((currentQty * (item.pricePaise ?? 0)) / 100).toFixed(0)}
                           </AppText>
                         </View>
 
                         <View style={styles.qtyRow}>
                           <AppText variant="caption" color="textMuted">
-                            Prescribed: {item.quantity} units
+                            Prescribed: {item.quantity} {item.quantity === 1 ? 'pack' : 'packs'}
+                            {item.packSize ? ` (${item.packSize})` : ''}
                           </AppText>
                           <View style={styles.counter}>
                             <Pressable

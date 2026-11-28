@@ -3,6 +3,7 @@ import type { Prescription, PrescriptionItemInput, PrescriptionStatus } from '@t
 import type { Database } from '../../platform/db/client';
 import { ageOn } from '../appointments/appointments.repository';
 import { patientProfiles } from '../users/patient-profile.schema';
+import { medicines } from '../pharmacy/pharmacy.schema';
 import { doctorProfiles } from '../users/doctor-profile.schema';
 import { users } from '../users/users.schema';
 import { prescriptionItems, prescriptions } from './prescriptions.schema';
@@ -73,8 +74,13 @@ export function createPrescriptionRepository(
       .limit(100);
     if (rows.length === 0) return [];
     const items = await db
-      .select()
+      .select({
+        item: prescriptionItems,
+        pricePaise: medicines.pricePaise,
+        packSize: medicines.packSize,
+      })
       .from(prescriptionItems)
+      .leftJoin(medicines, eq(medicines.id, prescriptionItems.medicineId))
       .where(sql`${prescriptionItems.prescriptionId} IN ${rows.map((r) => r.p.id)}`)
       .orderBy(asc(prescriptionItems.position));
     return rows.map(
@@ -90,8 +96,8 @@ export function createPrescriptionRepository(
         },
         patient: { id: p.patientId, name: patientName, age: patientDob ? ageOn(patientDob, now()) : null },
         items: items
-          .filter((i) => i.prescriptionId === p.id)
-          .map((i) => ({
+          .filter(({ item }) => item.prescriptionId === p.id)
+          .map(({ item: i, pricePaise, packSize }) => ({
             id: i.id,
             medicineId: i.medicineId,
             medicineName: i.medicineName,
@@ -101,6 +107,8 @@ export function createPrescriptionRepository(
             quantity: i.quantity,
             instructions: i.instructions,
             inCatalog: i.medicineId !== null,
+            pricePaise,
+            packSize,
           })),
         generalInstructions: p.generalInstructions,
         validDays: p.validDays,

@@ -53,7 +53,8 @@ export default function RootLayout() {
         <Stack.Protected guard={!!role}>
           <Stack.Screen
             name="consultation/[appointmentId]"
-            options={{ headerShown: false, gestureEnabled: false }}
+            // The title is also the back button's label on the next screen ("Consultation, back").
+            options={{ headerShown: false, gestureEnabled: false, title: 'Consultation' }}
           />
           <Stack.Screen
             name="prescription/[consultationId]"

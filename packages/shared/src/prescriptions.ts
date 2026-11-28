@@ -37,10 +37,32 @@ export const PRESCRIPTION_DEFAULT_VALID_DAYS = 30;
 /** A doctor can write or change a draft until this long after the consultation ends. */
 export const PRESCRIBE_WINDOW_HOURS = 24;
 
-/** A sensible starting quantity: one unit per dose for every dose in the course. The doctor can change it. */
-export function suggestQuantity(frequency: Frequency, durationDays: number): number {
+/** Leading amount in "5 ml", "1/2 tablet", "60 ml bottle", "15 tablets"; null if none. */
+export function leadingAmount(text: string | null | undefined): number | null {
+  const m = /^\s*(\d+(?:\.\d+)?)(?:\s*\/\s*(\d+))?/.exec(text ?? '');
+  if (!m) return null;
+  const value = m[2] ? Number(m[1]) / Number(m[2]) : Number(m[1]);
+  return value > 0 ? value : null;
+}
+
+/**
+ * A sensible starting quantity the doctor can change. For a catalog medicine it is in
+ * **packs**, because the pharmacy stocks, prices and dispenses packs: 5 ml twice a day for
+ * 5 days of a "60 ml bottle" is 1 bottle, not 10. Without a pack size (free-text medicines)
+ * it is the number of doses.
+ */
+export function suggestQuantity(
+  frequency: Frequency,
+  durationDays: number,
+  dosage?: string,
+  packSize?: string | null,
+): number {
   const perDay = FREQUENCIES[frequency].perDay;
-  return perDay === 0 ? 10 : perDay * durationDays;
+  const doses = perDay === 0 ? 10 : perDay * durationDays;
+  const perDose = leadingAmount(dosage);
+  const perPack = leadingAmount(packSize);
+  // ponytail: assumes dose and pack use the same unit (ml with ml, tablets with tablets); the doctor can override
+  return perDose && perPack ? Math.max(1, Math.ceil((doses * perDose) / perPack)) : doses;
 }
 
 /** GET /v1/medicines: what anyone sees in the catalog. Exact stock is the pharmacy's business. */
@@ -76,6 +98,9 @@ export interface PrescriptionItem extends PrescriptionItemInput {
   id: string;
   /** False when the medicine isn't in the TeleCare+ pharmacy catalog (can't be ordered here). */
   inCatalog: boolean;
+  /** Catalog price per pack and pack size; null for free-text medicines. `quantity` counts packs. */
+  pricePaise: number | null;
+  packSize: string | null;
 }
 
 export interface Prescription {
