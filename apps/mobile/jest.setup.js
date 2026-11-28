@@ -29,3 +29,6 @@ jest.mock('expo-speech-recognition', () => ({
 
 // 100ms video SDK is native-only; tests use the fake/none video providers.
 jest.mock('@100mslive/react-native-hms', () => ({}));
+
+// Web view is native; video screens render without it in tests.
+jest.mock('react-native-webview', () => ({ WebView: () => null }));

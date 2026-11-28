@@ -2,11 +2,12 @@ import { StyleSheet, View } from 'react-native';
 import type { VideoAccess } from '@telecare/shared';
 import { ICONS } from '@/features/shell/icons';
 import { AppText, Icon, colors, radius, spacing } from '@/ui';
+import { WebCall } from './WebCall';
 import { HmsCall } from './HmsCall';
 
 /**
  * Where the video call shows (blueprint §13.2: one client component for any
- * provider). 100ms rooms get a real call; demo and chat-only modes say honestly
+ * provider). direct (P2P), Daily and 100ms rooms get a real call; demo and chat-only modes say honestly
  * what is happening instead of pretending.
  */
 export function VideoPanel({
@@ -19,6 +20,8 @@ export function VideoPanel({
   name: string;
   onVideoFailed: () => void;
 }) {
+  if (video?.provider === 'p2p' || video?.provider === 'daily')
+    return <WebCall video={video} name={name} onFailed={onVideoFailed} />;
   if (video?.provider === 'hms') return <HmsCall video={video} name={name} onFailed={onVideoFailed} />;
   const demo = video?.provider === 'fake';
   return (

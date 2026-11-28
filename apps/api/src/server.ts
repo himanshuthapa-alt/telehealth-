@@ -1,6 +1,11 @@
+import { createP2pVideoProvider } from './modules/consultations/p2p';
 import { createSarvam } from './modules/voice/sarvam';
 import { createApp, type SweepConsultations } from './app';
-import { createFakeVideoProvider, createHmsVideoProvider } from './modules/consultations/video';
+import {
+  createFakeVideoProvider,
+  createDailyVideoProvider,
+  createHmsVideoProvider,
+} from './modules/consultations/video';
 import { loadConfig } from './config/env';
 import { createDatabase } from './platform/db/client';
 import { createLogger } from './platform/logger';
@@ -36,16 +41,20 @@ const app = createApp({
   // ponytail: reset codes go to the API log (D3, no SMS); plug an SMS ResetCodeDelivery in here later
   resetCodeDelivery: createLogResetCodeDelivery(logger),
   video:
-    config.VIDEO_PROVIDER === 'hms'
-      ? createHmsVideoProvider({
-          accessKey: config.HMS_ACCESS_KEY!,
-          appSecret: config.HMS_APP_SECRET!,
-          templateId: config.HMS_TEMPLATE_ID!,
-          roles: { doctor: config.HMS_DOCTOR_ROLE, patient: config.HMS_PATIENT_ROLE },
-        })
-      : config.VIDEO_PROVIDER === 'fake'
-        ? createFakeVideoProvider()
-        : null,
+    config.VIDEO_PROVIDER === 'p2p'
+      ? createP2pVideoProvider(config.JWT_SECRET)
+      : config.VIDEO_PROVIDER === 'daily'
+        ? createDailyVideoProvider({ apiKey: config.DAILY_API_KEY! })
+        : config.VIDEO_PROVIDER === 'hms'
+          ? createHmsVideoProvider({
+              accessKey: config.HMS_ACCESS_KEY!,
+              appSecret: config.HMS_APP_SECRET!,
+              templateId: config.HMS_TEMPLATE_ID!,
+              roles: { doctor: config.HMS_DOCTOR_ROLE, patient: config.HMS_PATIENT_ROLE },
+            })
+          : config.VIDEO_PROVIDER === 'fake'
+            ? createFakeVideoProvider()
+            : null,
   ttsBaseUrl: config.TTS_BASE_URL,
   sarvam: config.SARVAM_API_KEY ? createSarvam({ apiKey: config.SARVAM_API_KEY }) : null,
   doctorProvider: config.DOCTOR_PROVIDER,

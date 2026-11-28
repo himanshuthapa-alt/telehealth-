@@ -38,6 +38,16 @@ New doctors sign up from the welcome screen ("I am a doctor") and appear to pati
 
 ## Video
 
+**Free, no account (default for the demo):** `VIDEO_PROVIDER=p2p` in `apps/api/.env`. The two
+devices send video directly to each other; the API only introduces them (`/v1/rtc/*`, gated by a
+short-lived call token). Works on the same Wi-Fi and most home networks; some mobile networks block
+direct connections (no relay server), and then the chat still works. Browsers only allow the camera
+on https or localhost pages, which the app handles for you.
+
+**Daily.co:** `VIDEO_PROVIDER=daily` + `DAILY_API_KEY`. Joining calls needs a card on file at Daily.
+
+**100ms:**
+
 `VIDEO_PROVIDER` in `apps/api/.env`:
 
 - `hms`: real video calls through [100ms](https://www.100ms.live). Free tier: 10,000 minutes/month (check current limits).

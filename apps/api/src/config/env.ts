@@ -9,8 +9,10 @@ const EnvSchema = z
     DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
     /** Signs access tokens. Generate with: openssl rand -base64 48 */
     JWT_SECRET: z.string().min(32, 'must be at least 32 characters'),
-    /** hms = real video via 100ms; fake = rooms and tokens without real media (demos, tests); none = chat-only. */
-    VIDEO_PROVIDER: z.enum(['hms', 'fake', 'none']).default('fake'),
+    /** p2p = free direct video (no account); daily = via Daily.co; hms = via 100ms; fake = rooms and tokens without real media (demos, tests); none = chat-only. */
+    VIDEO_PROVIDER: z.enum(['p2p', 'daily', 'hms', 'fake', 'none']).default('fake'),
+    /** Daily.co API key (dashboard → Developers). Required when VIDEO_PROVIDER=daily. */
+    DAILY_API_KEY: z.string().optional(),
     /** 100ms credentials (dashboard → Developer). Required when VIDEO_PROVIDER=hms. */
     HMS_ACCESS_KEY: z.string().optional(),
     HMS_APP_SECRET: z.string().optional(),
@@ -40,6 +42,10 @@ const EnvSchema = z
   })
   .refine((c) => c.VIDEO_PROVIDER !== 'hms' || (c.HMS_ACCESS_KEY && c.HMS_APP_SECRET && c.HMS_TEMPLATE_ID), {
     message: 'VIDEO_PROVIDER=hms needs HMS_ACCESS_KEY, HMS_APP_SECRET and HMS_TEMPLATE_ID',
+    path: ['VIDEO_PROVIDER'],
+  })
+  .refine((c) => c.VIDEO_PROVIDER !== 'daily' || c.DAILY_API_KEY, {
+    message: 'VIDEO_PROVIDER=daily needs DAILY_API_KEY',
     path: ['VIDEO_PROVIDER'],
   });
 

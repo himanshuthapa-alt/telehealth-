@@ -24,6 +24,8 @@ services:
         generateValue: true
       - key: VIDEO_PROVIDER
         value: fake # set to hms once HMS_* are filled in
+      - key: DAILY_API_KEY
+        sync: false # set VIDEO_PROVIDER=daily to use it
       - key: HMS_ACCESS_KEY
         sync: false
       - key: HMS_APP_SECRET

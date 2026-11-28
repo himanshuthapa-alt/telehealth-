@@ -26,6 +26,7 @@ import { appointmentRoutes } from './modules/appointments/appointments.routes';
 import { createAppointmentService } from './modules/appointments/appointments.service';
 import { createConsultationRepository } from './modules/consultations/consultations.repository';
 import { consultationRoutes } from './modules/consultations/consultations.routes';
+import { p2pRoutes } from './modules/consultations/p2p';
 import {
   createConsultationService,
   type ConsultationService,
@@ -160,6 +161,7 @@ export function createApp(deps: AppDeps) {
     now,
   });
   app.use(consultationRoutes(consultationService, guards));
+  app.use(p2pRoutes(deps.jwtSecret)); // free direct video call page + signalling
   const catalog = createMedicineCatalog(deps.db);
   app.use(medicineRoutes(catalog, guards));
   const prescriptionRepo = createPrescriptionRepository(deps.db, now);

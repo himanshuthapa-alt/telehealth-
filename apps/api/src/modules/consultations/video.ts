@@ -110,3 +110,62 @@ export function createHmsVideoProvider(config: HmsConfig): VideoProvider {
     },
   };
 }
+
+const DAILY_API = 'https://api.daily.co/v1';
+
+/**
+ * Daily (https://www.daily.co), free tier 10,000 participant-minutes a month.
+ * One private room per consultation; each person joins with a short meeting
+ * token (the doctor as owner). `roomId` is the room URL, which the app opens.
+ * The API key never leaves the server.
+ */
+export function createDailyVideoProvider(config: { apiKey: string; fetch?: typeof fetch }): VideoProvider {
+  const doFetch = config.fetch ?? fetch;
+  const call = async (method: string, path: string, body?: unknown) => {
+    const res = await doFetch(`${DAILY_API}${path}`, {
+      method,
+      headers: { authorization: `Bearer ${config.apiKey}`, 'content-type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.timeout(10_000),
+    });
+    const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    return { ok: res.ok, status: res.status, json };
+  };
+  const nameOf = (roomUrl: string) => roomUrl.split('/').pop() ?? roomUrl;
+  const inSeconds = (s: number) => Math.floor(Date.now() / 1000) + s;
+
+  return {
+    name: 'daily',
+    async createRoom(consultationId) {
+      const name = `telecare-${consultationId}`;
+      const created = await call('POST', '/rooms', {
+        name,
+        privacy: 'private', // a meeting token is required to enter
+        // Rooms delete themselves; a consultation never runs this long.
+        properties: { exp: inSeconds(4 * 3600), eject_at_room_exp: true, enable_prejoin_ui: false },
+      });
+      // Both people joining at once: the second create finds the room already there.
+      const room = created.ok ? created.json : (await call('GET', `/rooms/${name}`)).json;
+      if (typeof room.url !== 'string') throw new Error(`Daily create room failed: HTTP ${created.status}`);
+      return { roomId: room.url };
+    },
+    async issueJoinToken(roomId, userId, role, ttlSeconds) {
+      const res = await call('POST', '/meeting-tokens', {
+        properties: {
+          room_name: nameOf(roomId),
+          user_id: userId,
+          is_owner: role === 'DOCTOR',
+          user_name: role === 'DOCTOR' ? 'Doctor' : 'Patient',
+          exp: inSeconds(ttlSeconds),
+        },
+      });
+      if (typeof res.json.token !== 'string')
+        throw new Error(`Daily meeting token failed: HTTP ${res.status}`);
+      return { token: res.json.token, expiresAt: new Date(Date.now() + ttlSeconds * 1000) };
+    },
+    async endRoom(roomId) {
+      // Deleting the room ends the call for everyone and stops rejoining. Best effort.
+      await call('DELETE', `/rooms/${nameOf(roomId)}`).catch(() => undefined);
+    },
+  };
+}
