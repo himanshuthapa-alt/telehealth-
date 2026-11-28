@@ -1,0 +1,34 @@
+# Render Blueprint for the TeleCare+ API (free tier). Database: Neon (free Postgres).
+# Secrets are set in the Render dashboard ("sync: false"), never in this file.
+services:
+  - type: web
+    name: telecare-api
+    runtime: node
+    plan: free
+    region: singapore
+    # Only the API and shared packages: skips installing the mobile app's React Native toolchain.
+    buildCommand: npm ci -w @telecare/api -w @telecare/shared --include-workspace-root
+    preDeployCommand: npm run db:migrate
+    startCommand: npm start -w @telecare/api
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: '24'
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: DATABASE_URL
+        sync: false # Neon connection string, with ?sslmode=require
+      - key: JWT_SECRET
+        generateValue: true
+      - key: VIDEO_PROVIDER
+        value: fake # set to hms once HMS_* are filled in
+      - key: HMS_ACCESS_KEY
+        sync: false
+      - key: HMS_APP_SECRET
+        sync: false
+      - key: HMS_TEMPLATE_ID
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false # your hosted web build's URL, if any
