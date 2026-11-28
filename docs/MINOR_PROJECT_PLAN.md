@@ -54,14 +54,14 @@ Each item has an acceptance test. **P0 = needed for the demo. P1 = should do. P2
 
 ### P0 — must have
 
-| ID   | Work                                                                                                                                       | Acceptance                                                                                       | Est.    | Owner (suggested) |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ | ------- | ----------------- |
-| P0-1 | ✅ Done. Prescription shows doctor name, qualification and registration number                                                             | Card + detail screen show them; API test asserts fields; patient never sees other private data   | 2 h     | Backend + Mobile  |
-| P0-2 | 100ms live test: create account, set `VIDEO_PROVIDER=hms`, call between two Android phones                                                 | Both see/hear each other; mute/camera work; ending closes the room; deny camera → chat continues | 3 h     | Third member      |
-| P0-3 | Host the API: Neon Postgres + Render/Railway; `JWT_SECRET` new; `CORS_ORIGINS`; migrations; seed once                                      | `/health` = ok on the public URL; login works from the APK on mobile data                        | 3 h     | Backend           |
-| P0-4 | Release APK pointed at the hosted API (`EXPO_PUBLIC_API_URL`), signed                                                                      | Installs on a phone that has never seen Metro; full journey works                                | 2 h     | Mobile            |
-| P0-5 | ✅ Done: `npm run db:demo-reset -- --confirm`. Demo reset script: wipes demo bookings/orders, keeps accounts; warm-up call before the viva | One command restores the demo state in < 1 min                                                   | 1 h     | Backend           |
-| P0-6 | Fix every open bug in §7 with severity High/Medium                                                                                         | §7 shows them Fixed with a test or E2E reference                                                 | ongoing | All               |
+| ID   | Work                                                                                                                                                                                                                                              | Acceptance                                                                                       | Est.    | Owner (suggested) |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------- | ----------------- |
+| P0-1 | ✅ Done. Prescription shows doctor name, qualification and registration number                                                                                                                                                                    | Card + detail screen show them; API test asserts fields; patient never sees other private data   | 2 h     | Backend + Mobile  |
+| P0-2 | 🟡 Code done and unit-tested; needs your 100ms keys + two phones. 100ms live test: create account, set `VIDEO_PROVIDER=hms`, call between two Android phones                                                                                      | Both see/hear each other; mute/camera work; ending closes the room; deny camera → chat continues | 3 h     | Third member      |
+| P0-3 | 🟡 `render.yaml` + DEPLOYMENT.md ready; deploy rehearsed locally (E2E-21). Needs your Neon + Render accounts. Host the API: Neon Postgres + Render/Railway; `JWT_SECRET` new; `CORS_ORIGINS`; migrations; seed once                               | `/health` = ok on the public URL; login works from the APK on mobile data                        | 3 h     | Backend           |
+| P0-4 | ✅ Built and verified on the emulator against the API (`apps/mobile/android/app/build/outputs/apk/release/app-release.apk`). Re-build pointed at the hosted URL after P0-3. Release APK pointed at the hosted API (`EXPO_PUBLIC_API_URL`), signed | Installs on a phone that has never seen Metro; full journey works                                | 2 h     | Mobile            |
+| P0-5 | ✅ Done: `npm run db:demo-reset -- --confirm`. Demo reset script: wipes demo bookings/orders, keeps accounts; warm-up call before the viva                                                                                                        | One command restores the demo state in < 1 min                                                   | 1 h     | Backend           |
+| P0-6 | Fix every open bug in §7 with severity High/Medium                                                                                                                                                                                                | §7 shows them Fixed with a test or E2E reference                                                 | ongoing | All               |
 
 ### P1 — should have
 
@@ -208,30 +208,32 @@ Rule: nothing new after day 9. Every change after that must fix a bug found in a
 
 Environment: local API + Postgres (Docker), Expo web build in Chrome, Android emulator (dev build with 100ms).
 
-| ID     | Step                                                                    | Result                                                                                            |
-| ------ | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| E2E-01 | App opens on web (Chrome) and Android                                   | ✅ (web needed CORS + web token storage: fixed)                                                   |
-| E2E-02 | "I am a doctor" → sign up Dr. Meera Iyer (DMC-2018/45678, Pediatrics)   | ✅ lands on "Awaiting approval"                                                                   |
-| E2E-03 | Log in as admin 9000000004                                              | ✅ queue shows her with all details                                                               |
-| E2E-04 | Reject without reason                                                   | ✅ Reject disabled                                                                                |
-| E2E-05 | Approve                                                                 | ✅ moves to Approved                                                                              |
-| E2E-06 | Doctor logs in: dashboard + stats + editable profile                    | ✅                                                                                                |
-| E2E-07 | Doctor sets Sat afternoon/evening + Sun morning, 15-min slots           | ✅ "Hours saved"                                                                                  |
-| E2E-08 | New patient Ramesh → Child doctor → Dr. Meera listed first ("New")      | ✅                                                                                                |
-| E2E-09 | Register with empty form                                                | ✅ all field errors                                                                               |
-| E2E-10 | Register with the doctor's phone                                        | ✅ clear message                                                                                  |
-| E2E-11 | Slot picker hides times inside the lead time                            | ✅ (BUG-01 found)                                                                                 |
-| E2E-12 | Book 12:30 today with a reason                                          | ✅ "room opens at 12:20" (BUG-02 found)                                                           |
-| E2E-13 | Doctor sees booking on Today; stats update                              | ✅ Today 1 / Upcoming 1, reason shown                                                             |
-| E2E-14 | Both join; doctor starts; chat both ways                                | ✅ live both ways; presence updates                                                               |
-| E2E-15 | Doctor issues prescription; patient sees card and Medicines tab         | ✅ issued with qualification + Reg. no.; card appeared in patient chat live (BUG-18 found)        |
-| E2E-16 | Patient orders from prescription (COD); tracking ID shown               | ✅ TC-B0SM-ZSX2, COD, ₹45 (BUG-19/20 found)                                                       |
-| E2E-17 | Pharmacy confirms → packs → ships → delivers; patient timeline updates  | ✅ confirm → pack → dispatch → deliver; patient timeline + inbox; doctor stats Completed 1 / ₹300 |
-| E2E-18 | Android: airplane mode on Doctors tab, then off                         | ✅ offline banner + "loads by itself"; list returned without a tap                                |
-| E2E-19 | Pharmacy (web): inventory shows exact stock; +10 on Ambroxol            | ✅ 60 → 70                                                                                        |
-| E2E-20 | Doctor adds missing qualification; empty value refused                  | ✅ field error, then "Saved."                                                                     |
-| E2E-21 | Deploy rehearsal: clean install with Render's command, production start | ✅ migrations ran, `/health` ok, login 200                                                        |
-| E2E-22 | Patient booking detail inside the 2 h cutoff                            | ✅ no Cancel button, rule explained                                                               |
+| ID     | Step                                                                    | Result                                                                                              |
+| ------ | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| E2E-01 | App opens on web (Chrome) and Android                                   | ✅ (web needed CORS + web token storage: fixed)                                                     |
+| E2E-02 | "I am a doctor" → sign up Dr. Meera Iyer (DMC-2018/45678, Pediatrics)   | ✅ lands on "Awaiting approval"                                                                     |
+| E2E-03 | Log in as admin 9000000004                                              | ✅ queue shows her with all details                                                                 |
+| E2E-04 | Reject without reason                                                   | ✅ Reject disabled                                                                                  |
+| E2E-05 | Approve                                                                 | ✅ moves to Approved                                                                                |
+| E2E-06 | Doctor logs in: dashboard + stats + editable profile                    | ✅                                                                                                  |
+| E2E-07 | Doctor sets Sat afternoon/evening + Sun morning, 15-min slots           | ✅ "Hours saved"                                                                                    |
+| E2E-08 | New patient Ramesh → Child doctor → Dr. Meera listed first ("New")      | ✅                                                                                                  |
+| E2E-09 | Register with empty form                                                | ✅ all field errors                                                                                 |
+| E2E-10 | Register with the doctor's phone                                        | ✅ clear message                                                                                    |
+| E2E-11 | Slot picker hides times inside the lead time                            | ✅ (BUG-01 found)                                                                                   |
+| E2E-12 | Book 12:30 today with a reason                                          | ✅ "room opens at 12:20" (BUG-02 found)                                                             |
+| E2E-13 | Doctor sees booking on Today; stats update                              | ✅ Today 1 / Upcoming 1, reason shown                                                               |
+| E2E-14 | Both join; doctor starts; chat both ways                                | ✅ live both ways; presence updates                                                                 |
+| E2E-15 | Doctor issues prescription; patient sees card and Medicines tab         | ✅ issued with qualification + Reg. no.; card appeared in patient chat live (BUG-18 found)          |
+| E2E-16 | Patient orders from prescription (COD); tracking ID shown               | ✅ TC-B0SM-ZSX2, COD, ₹45 (BUG-19/20 found)                                                         |
+| E2E-17 | Pharmacy confirms → packs → ships → delivers; patient timeline updates  | ✅ confirm → pack → dispatch → deliver; patient timeline + inbox; doctor stats Completed 1 / ₹300   |
+| E2E-18 | Android: airplane mode on Doctors tab, then off                         | ✅ offline banner + "loads by itself"; list returned without a tap                                  |
+| E2E-19 | Pharmacy (web): inventory shows exact stock; +10 on Ambroxol            | ✅ 60 → 70                                                                                          |
+| E2E-20 | Doctor adds missing qualification; empty value refused                  | ✅ field error, then "Saved."                                                                       |
+| E2E-21 | Deploy rehearsal: clean install with Render's command, production start | ✅ migrations ran, `/health` ok, login 200                                                          |
+| E2E-22 | Patient booking detail inside the 2 h cutoff                            | ✅ no Cancel button, rule explained                                                                 |
+| E2E-23 | Patient books tomorrow 9:00 (review says cancellable), then cancels     | ✅ "Cancelled by Patient"; slot count 16 → 15 → back; doctor inbox: New booking + Booking cancelled |
+| E2E-24 | Release APK on Android (no bundler), API via `adb reverse`              | ✅ launches, session kept, doctors list live (17, real doctor first)                                |
 
 ---
 
