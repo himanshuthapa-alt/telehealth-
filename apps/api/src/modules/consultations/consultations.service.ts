@@ -105,6 +105,11 @@ export function createConsultationService({
         });
       }
       if (c.status === 'COMPLETED' || c.status === 'EXPIRED') throw closed();
+      // The video service was changed since this room was made: make a room on the current one.
+      if (video && c.provider !== video.name) {
+        const room = await video.createRoom(appointmentId);
+        c = await repo.moveRoom(c.id, c.provider, { provider: video.name, providerRoomId: room.roomId });
+      }
 
       await repo.addEvent(c.id, actor.id, (await repo.hasJoined(c.id, actor.id)) ? 'RECONNECTED' : 'JOINED');
       await audit.record({

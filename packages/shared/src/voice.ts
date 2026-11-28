@@ -69,7 +69,18 @@ const EMERGENCY_WORDS = [
 const SPECIALTIES: { words: string[]; specialization: Specialization }[] = [
   { words: ['skin', 'rash', 'itch', 'khujli', 'daane', 'pimple', 'acne'], specialization: 'Dermatology' },
   {
-    words: ['child', 'baby', 'baccha', 'bachha', 'bacche', 'bachche', 'bachcha', 'kid', 'infant', 'pediatric'],
+    words: [
+      'child',
+      'baby',
+      'baccha',
+      'bachha',
+      'bacche',
+      'bachche',
+      'bachcha',
+      'kid',
+      'infant',
+      'pediatric',
+    ],
     specialization: 'Pediatrics',
   },
   { words: ['heart', 'chest', 'dil', 'dhadkan', 'cardio', 'bp'], specialization: 'Cardiology' },

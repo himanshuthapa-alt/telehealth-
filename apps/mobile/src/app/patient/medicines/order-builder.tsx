@@ -21,6 +21,9 @@ import {
   spacing,
 } from '@/ui';
 
+/** Packs still allowed from this line: prescribed minus already ordered. */
+const remaining = (i: PrescriptionItem) => Math.max(0, i.quantity - i.orderedQuantity);
+
 export default function OrderBuilder() {
   const { prescriptionId } = useLocalSearchParams<{ prescriptionId?: string }>();
   const prescription = usePrescription(prescriptionId ?? '');
@@ -57,11 +60,11 @@ export default function OrderBuilder() {
     }
 
     const orderItems = items
-      .filter((i) => i.medicineId && (quantities[i.id] ?? i.quantity) > 0)
+      .filter((i) => i.medicineId && (quantities[i.id] ?? remaining(i)) > 0)
       .map((i) => ({
         prescriptionItemId: i.id,
         medicineId: i.medicineId!,
-        quantity: quantities[i.id] ?? i.quantity,
+        quantity: quantities[i.id] ?? remaining(i),
       }));
 
     if (orderItems.length === 0) {
@@ -110,7 +113,7 @@ export default function OrderBuilder() {
               // Catalog price per pack: the same number the server charges.
               let subtotalPaise = 0;
               for (const i of availableItems) {
-                const qty = quantities[i.id] ?? i.quantity;
+                const qty = quantities[i.id] ?? remaining(i);
                 subtotalPaise += (i.pricePaise ?? 0) * qty;
               }
 
@@ -119,7 +122,8 @@ export default function OrderBuilder() {
                   <AppText variant="heading">Prescribed Medicines</AppText>
 
                   {availableItems.map((item) => {
-                    const currentQty = quantities[item.id] ?? item.quantity;
+                    const left = remaining(item);
+                    const currentQty = quantities[item.id] ?? left;
                     return (
                       <Card key={item.id} style={styles.itemCard}>
                         <View style={styles.itemHeader}>
@@ -139,13 +143,15 @@ export default function OrderBuilder() {
                           <AppText variant="caption" color="textMuted">
                             Prescribed: {item.quantity} {item.quantity === 1 ? 'pack' : 'packs'}
                             {item.packSize ? ` (${item.packSize})` : ''}
+                            {item.orderedQuantity > 0 &&
+                              (left === 0 ? ' · all ordered' : ` · ${item.orderedQuantity} already ordered`)}
                           </AppText>
                           <View style={styles.counter}>
                             <Pressable
                               accessibilityRole="button"
                               accessibilityLabel="Decrease quantity"
                               style={styles.counterBtn}
-                              onPress={() => updateItemQty(item.id, -1, item.quantity)}
+                              onPress={() => updateItemQty(item.id, -1, left)}
                             >
                               <AppText variant="label" style={styles.counterBtnText}>
                                 -
@@ -158,7 +164,7 @@ export default function OrderBuilder() {
                               accessibilityRole="button"
                               accessibilityLabel="Increase quantity"
                               style={styles.counterBtn}
-                              onPress={() => updateItemQty(item.id, 1, item.quantity)}
+                              onPress={() => updateItemQty(item.id, 1, left)}
                             >
                               <AppText variant="label" style={styles.counterBtnText}>
                                 +

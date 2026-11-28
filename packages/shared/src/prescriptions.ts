@@ -101,6 +101,8 @@ export interface PrescriptionItem extends PrescriptionItemInput {
   /** Catalog price per pack and pack size; null for free-text medicines. `quantity` counts packs. */
   pricePaise: number | null;
   packSize: string | null;
+  /** Packs already ordered from this line (cancelled orders don't count). */
+  orderedQuantity: number;
 }
 
 export interface Prescription {

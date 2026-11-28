@@ -7,8 +7,8 @@ import { useBookAppointment } from '@/features/appointments/appointment-queries'
 import { DoctorCardView } from '@/features/doctors/DoctorCardView';
 import { api } from '@/lib/api';
 import { ApiError } from '@/lib/api-client';
-import { AppText, Button, Icon, MicButton, TextField, colors, radius, spacing, type MicStatus } from '@/ui';
-import { useCloudVoice, useVoiceCapabilities } from './cloud-voice';
+import { AppText, Button, Icon, MicButton, TextField, colors, radius, spacing } from '@/ui';
+import { useVoiceCapabilities, useVoiceTurn, type Understood } from './cloud-voice';
 import {
   LANGUAGE_BY_CODE,
   SAY,
@@ -29,19 +29,26 @@ const MAX_OFFERS = 3;
  * problem in any Indian language, hear one suggestion, say yes or no.
  */
 export function ReceptionistModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  // Mounted only while open, so every visit starts a fresh conversation.
+  return (
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose} presentationStyle="pageSheet">
+      {visible && <Conversation onClose={onClose} />}
+    </Modal>
+  );
+}
+
+function Conversation({ onClose }: { onClose: () => void }) {
   const cloud = useVoiceCapabilities().data?.indianLanguages === true;
-  const voice = useCloudVoice();
   const book = useBookAppointment();
-  const [lines, setLines] = useState<Line[]>([]);
+  const [lines, setLines] = useState<Line[]>([{ from: 'ai', text: SAY.greet }]);
+  const [busy, setBusy] = useState(false); // finding a doctor or booking
   const [stage, setStage] = useState<Stage>('problem');
   const [offer, setOffer] = useState<Offer | null>(null);
-  const [mic, setMic] = useState<MicStatus>('idle');
   const [typed, setTyped] = useState('');
   const lang = useRef('hi-IN'); // the patient's language, updated from what they speak
   const problem = useRef<{ specialization: Specialization; words: string } | null>(null);
   const declined = useRef(new Set<string>());
   const unclearCount = useRef(0);
-  const autoStop = useRef<ReturnType<typeof setTimeout>>(undefined);
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
 
   const say = useCallback((text: string) => {
@@ -49,17 +56,9 @@ export function ReceptionistModal({ visible, onClose }: { visible: boolean; onCl
     void speak(text, lang.current).catch(() => {});
   }, []);
 
-  // Fresh conversation each time it opens.
   useEffect(() => {
-    if (!visible) return;
-    setLines([]);
-    setStage('problem');
-    setOffer(null);
-    problem.current = null;
-    declined.current = new Set();
-    unclearCount.current = 0;
-    say(SAY.greet);
-  }, [visible, say]);
+    void speak(SAY.greet, lang.current).catch(() => {});
+  }, []);
 
   const nextOffer = useCallback(async () => {
     if (!problem.current) return;
@@ -72,7 +71,7 @@ export function ReceptionistModal({ visible, onClose }: { visible: boolean; onCl
       });
       return;
     }
-    setMic('thinking');
+    setBusy(true);
     try {
       const found = await findOffer(
         api.get,
@@ -88,13 +87,13 @@ export function ReceptionistModal({ visible, onClose }: { visible: boolean; onCl
     } catch {
       say(SAY.failed);
     } finally {
-      setMic('idle');
+      setBusy(false);
     }
   }, [onClose, say]);
 
   const confirm = useCallback(async () => {
     if (!offer || !problem.current) return;
-    setMic('thinking');
+    setBusy(true);
     try {
       await book.mutateAsync({
         request: { doctorId: offer.doctor.id, startAt: offer.startAt, reasonNote: problem.current.words },
@@ -110,7 +109,7 @@ export function ReceptionistModal({ visible, onClose }: { visible: boolean; onCl
       say(SAY.taken);
       await nextOffer();
     } finally {
-      setMic((m) => (m === 'thinking' ? 'idle' : m));
+      setBusy(false);
     }
   }, [offer, book, say, nextOffer]);
 
@@ -145,29 +144,15 @@ export function ReceptionistModal({ visible, onClose }: { visible: boolean; onCl
     [stage, say, confirm, decline, nextOffer],
   );
 
-  const finishRecording = useCallback(async () => {
-    clearTimeout(autoStop.current);
-    setMic('thinking');
-    try {
-      const u = await voice.stopAndUnderstand();
+  const onHeard = useCallback(
+    async (u: Understood) => {
       if (u.languageCode) lang.current = u.languageCode;
-      setMic('idle');
       if (!u.transcript) return say(SAY.unclear);
       await hear(u.transcript, u.intent);
-    } catch {
-      setMic('idle');
-      say("Sorry, I couldn't hear that clearly. Please try again.");
-    }
-  }, [voice, hear, say]);
-
-  const onMic = useCallback(async () => {
-    if (mic === 'listening') return void finishRecording();
-    if (mic !== 'idle') return;
-    if (!(await voice.start().catch(() => false))) return say('Please allow the microphone to talk to me.');
-    setMic('listening');
-    // ponytail: fixed 8 s cap; add silence detection if people find tapping again awkward
-    autoStop.current = setTimeout(() => void finishRecording(), 8000);
-  }, [mic, voice, finishRecording, say]);
+    },
+    [hear, say],
+  );
+  const { mic, press: onMic } = useVoiceTurn(onHeard, say);
 
   const sendTyped = () => {
     const text = typed.trim();
@@ -177,98 +162,96 @@ export function ReceptionistModal({ visible, onClose }: { visible: boolean; onCl
   };
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose} presentationStyle="pageSheet">
-      <View style={styles.sheet}>
-        <View style={styles.header}>
-          <View style={styles.avatar}>
-            <Icon
-              name={{ android: 'support_agent', ios: 'person.crop.circle.badge.questionmark' }}
-              size={28}
-              color="primary"
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <AppText variant="heading">Receptionist</AppText>
-            <AppText variant="caption" color="textMuted">
-              Speak in any Indian language. I only connect you to a doctor.
-            </AppText>
-          </View>
-          <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} hitSlop={12}>
-            <Icon name={{ android: 'close', ios: 'xmark' }} size={28} color="text" />
-          </Pressable>
+    <View style={styles.sheet}>
+      <View style={styles.header}>
+        <View style={styles.avatar}>
+          <Icon
+            name={{ android: 'support_agent', ios: 'person.crop.circle.badge.questionmark' }}
+            size={28}
+            color="primary"
+          />
         </View>
+        <View style={{ flex: 1 }}>
+          <AppText variant="heading">Receptionist</AppText>
+          <AppText variant="caption" color="textMuted">
+            Speak in any Indian language. I only connect you to a doctor.
+          </AppText>
+        </View>
+        <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} hitSlop={12}>
+          <Icon name={{ android: 'close', ios: 'xmark' }} size={28} color="text" />
+        </Pressable>
+      </View>
 
-        <ScrollView
-          ref={scroll}
-          contentContainerStyle={styles.chat}
-          onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}
-        >
-          {lines.map((l, i) => (
-            <View key={i} style={[styles.bubble, l.from === 'me' ? styles.mine : styles.theirs]}>
-              <AppText color={l.from === 'me' ? 'onPrimary' : 'text'}>{l.text}</AppText>
-            </View>
-          ))}
-          {stage === 'offer' && offer && (
-            <View style={{ gap: spacing.sm }}>
-              <DoctorCardView doctor={offer.doctor} onPress={() => {}} showAction={false} />
-              <View style={styles.row}>
-                <View style={{ flex: 1 }}>
-                  <Button
-                    label="Yes"
-                    icon={{ android: 'check', ios: 'checkmark' }}
-                    onPress={() => void hear('yes', { kind: 'unknown' }, 'Yes')}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Button
-                    label="No"
-                    variant="secondary"
-                    onPress={() => void hear('no', { kind: 'unknown' }, 'No')}
-                  />
-                </View>
+      <ScrollView
+        ref={scroll}
+        contentContainerStyle={styles.chat}
+        onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}
+      >
+        {lines.map((l, i) => (
+          <View key={i} style={[styles.bubble, l.from === 'me' ? styles.mine : styles.theirs]}>
+            <AppText color={l.from === 'me' ? 'onPrimary' : 'text'}>{l.text}</AppText>
+          </View>
+        ))}
+        {stage === 'offer' && offer && (
+          <View style={{ gap: spacing.sm }}>
+            <DoctorCardView doctor={offer.doctor} onPress={() => {}} showAction={false} />
+            <View style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <Button
+                  label="Yes"
+                  icon={{ android: 'check', ios: 'checkmark' }}
+                  onPress={() => void hear('yes', { kind: 'unknown' }, 'Yes')}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Button
+                  label="No"
+                  variant="secondary"
+                  onPress={() => void hear('no', { kind: 'unknown' }, 'No')}
+                />
               </View>
             </View>
-          )}
-          {stage === 'booked' && (
-            <Button
-              label="See my booking"
-              onPress={() => {
-                onClose();
-                router.navigate('/patient/appointments');
-              }}
-            />
-          )}
-          {stage === 'emergency' && (
-            <View style={styles.row}>
-              {['108', '112'].map((n) => (
-                <View key={n} style={{ flex: 1 }}>
-                  <Button label={`Call ${n}`} variant="danger" onPress={() => Linking.openURL(`tel:${n}`)} />
-                </View>
-              ))}
-            </View>
-          )}
-        </ScrollView>
-
-        <View style={styles.footer}>
-          {cloud && <MicButton status={mic} onPress={() => void onMic()} />}
+          </View>
+        )}
+        {stage === 'booked' && (
+          <Button
+            label="See my booking"
+            onPress={() => {
+              onClose();
+              router.navigate('/patient/appointments');
+            }}
+          />
+        )}
+        {stage === 'emergency' && (
           <View style={styles.row}>
-            <View style={{ flex: 1 }}>
-              <TextField
-                label={cloud ? 'Or type' : 'Type your problem'}
-                value={typed}
-                onChangeText={setTyped}
-                onSubmitEditing={sendTyped}
-                returnKeyType="send"
-                placeholder="e.g. my child has fever"
-              />
-            </View>
-            <View style={{ justifyContent: 'flex-end' }}>
-              <Button label="Send" variant="secondary" onPress={sendTyped} disabled={!typed.trim()} />
-            </View>
+            {['108', '112'].map((n) => (
+              <View key={n} style={{ flex: 1 }}>
+                <Button label={`Call ${n}`} variant="danger" onPress={() => Linking.openURL(`tel:${n}`)} />
+              </View>
+            ))}
+          </View>
+        )}
+      </ScrollView>
+
+      <View style={styles.footer}>
+        {cloud && <MicButton status={busy ? 'thinking' : mic} onPress={() => void onMic()} />}
+        <View style={styles.row}>
+          <View style={{ flex: 1 }}>
+            <TextField
+              label={cloud ? 'Or type' : 'Type your problem'}
+              value={typed}
+              onChangeText={setTyped}
+              onSubmitEditing={sendTyped}
+              returnKeyType="send"
+              placeholder="e.g. my child has fever"
+            />
+          </View>
+          <View style={{ justifyContent: 'flex-end' }}>
+            <Button label="Send" variant="secondary" onPress={sendTyped} disabled={!typed.trim()} />
           </View>
         </View>
       </View>
-    </Modal>
+    </View>
   );
 }
 

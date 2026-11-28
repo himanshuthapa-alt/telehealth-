@@ -1,3 +1,4 @@
+/* global process, Buffer, console, File -- a Node script */
 // First Sarvam call: Hindi text → speech (saved as WAV), then that audio → English text,
 // the same round trip the app's voice feature makes.
 // Run from apps/api:  node --env-file=.env scripts/sarvam-first-call.mjs

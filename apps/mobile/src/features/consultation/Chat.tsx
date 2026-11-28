@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, View, Platform } from 'react-native';
 import type { ScrollViewInstance } from 'react-native';
 import { MESSAGE_MAX_LENGTH, type ChatMessage, type PrescriptionCardBody } from '@telecare/shared';
 import { formatTime } from '@/features/appointments/format';
@@ -152,6 +152,14 @@ export function Chat({
             onChangeText={setText}
             maxLength={MESSAGE_MAX_LENGTH}
             multiline
+            // Web: Enter sends, Shift+Enter starts a new line (phones keep Enter = new line).
+            onKeyPress={(e) => {
+              const key = e.nativeEvent as { key: string; shiftKey?: boolean };
+              if (Platform.OS === 'web' && key.key === 'Enter' && !key.shiftKey) {
+                e.preventDefault();
+                submit();
+              }
+            }}
             style={styles.input}
           />
           <Pressable

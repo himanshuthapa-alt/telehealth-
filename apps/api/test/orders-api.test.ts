@@ -145,6 +145,9 @@ describe('placing an order', () => {
       items: [{ prescriptionItemId: para.id, medicineId: paracetamol, quantity: 6 }],
     });
     expect(ok.status).toBe(201);
+    // The prescription now says how much is left to order (KNOWN-1).
+    const after = await api<Prescription>('GET', `/v1/prescriptions/${rx.id}`, patient.token);
+    expect(after.body.items.find((i) => i.id === para.id)!.orderedQuantity).toBe(6);
     const tooMany = await order(patient.token, {
       prescriptionId: rx.id,
       items: [{ prescriptionItemId: para.id, medicineId: paracetamol, quantity: 5 }],

@@ -17,6 +17,7 @@ import { hashPassword } from '../src/modules/auth/passwords';
 import { consultationEvents } from '../src/modules/consultations/consultations.schema';
 import { doctorProfiles } from '../src/modules/users/doctor-profile.schema';
 import { users } from '../src/modules/users/users.schema';
+import { createP2pVideoProvider } from '../src/modules/consultations/p2p';
 import { listen, randomPhone, testApp, testDatabase } from './helpers';
 
 const { db } = testDatabase();
@@ -335,5 +336,25 @@ describe('closing when the window passes', () => {
     expect((await updates(waiting.patient.token, waitingId)).body.consultation.status).toBe('EXPIRED');
     expect(await status(waiting.appointmentId)).toBe('NO_SHOW');
     expect(await status(unjoined.appointmentId)).toBe('NO_SHOW');
+  });
+});
+
+describe('switching video service', () => {
+  it('an open consultation moves to the current service when someone rejoins', async () => {
+    const { patient, doctor, appointmentId } = await bookedPair();
+    clock = ist('09:55');
+    const first = await join(patient.token, appointmentId);
+    expect(first.body.video?.provider).toBe('fake');
+    const p2p = await listen(
+      testApp({ now: () => clock, video: createP2pVideoProvider('z'.repeat(40)) }).app,
+    );
+    try {
+      const again = await join(doctor.token, appointmentId, p2p);
+      expect(again.status).toBe(200);
+      expect(again.body.video).toMatchObject({ provider: 'p2p', roomId: expect.stringMatching(/^c-/) });
+      expect(again.body.consultation.id).toBe(first.body.consultation.id); // same consultation, chat kept
+    } finally {
+      await p2p.close();
+    }
   });
 });

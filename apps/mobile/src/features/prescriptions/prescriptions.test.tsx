@@ -44,6 +44,7 @@ const base: Prescription = {
       inCatalog: true,
       pricePaise: 2500,
       packSize: '10 tablets',
+      orderedQuantity: 0,
     },
     {
       id: 'i2',
@@ -57,6 +58,7 @@ const base: Prescription = {
       inCatalog: false,
       pricePaise: null,
       packSize: null,
+      orderedQuantity: 0,
     },
   ],
   generalInstructions: 'Drink plenty of water.',

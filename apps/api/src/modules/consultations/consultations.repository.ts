@@ -22,6 +22,15 @@ export interface ConsultationRepository {
     provider: string;
     providerRoomId: string | null;
   }): Promise<ConsultationRow>;
+  /**
+   * Points the consultation at a room on another video provider, only if it is
+   * still on `fromProvider` (two people rejoining at once move it once).
+   */
+  moveRoom(
+    id: string,
+    fromProvider: string,
+    to: { provider: string; providerRoomId: string | null },
+  ): Promise<ConsultationRow>;
   /** Moves status only if it is currently one of `from` (safe against races). */
   transition(
     id: string,
@@ -79,6 +88,14 @@ export function createConsultationRepository(db: Database): ConsultationReposito
         .from(consultations)
         .where(eq(consultations.appointmentId, c.appointmentId));
       return existing!;
+    },
+    async moveRoom(id, fromProvider, to) {
+      await db
+        .update(consultations)
+        .set(to)
+        .where(and(eq(consultations.id, id), eq(consultations.provider, fromProvider)));
+      const [row] = await db.select().from(consultations).where(eq(consultations.id, id));
+      return row!;
     },
     async transition(id, from, to, at) {
       const patch = to === 'ACTIVE' ? { status: to, startedAt: at } : { status: to, endedAt: at };

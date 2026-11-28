@@ -6,6 +6,7 @@ import { patientProfiles } from '../users/patient-profile.schema';
 import { medicines } from '../pharmacy/pharmacy.schema';
 import { doctorProfiles } from '../users/doctor-profile.schema';
 import { users } from '../users/users.schema';
+import { orderItems, orders } from '../orders/orders.schema';
 import { prescriptionItems, prescriptions } from './prescriptions.schema';
 
 export type PrescriptionRow = typeof prescriptions.$inferSelect;
@@ -78,6 +79,12 @@ export function createPrescriptionRepository(
         item: prescriptionItems,
         pricePaise: medicines.pricePaise,
         packSize: medicines.packSize,
+        // Packs already ordered (not cancelled): the same rule the order allowance check uses.
+        orderedQuantity: sql<number>`(
+          select coalesce(sum(${orderItems.quantity}), 0)::integer from ${orderItems}
+          inner join ${orders} on ${orders.id} = ${orderItems.orderId}
+          where ${orderItems.prescriptionItemId} = ${prescriptionItems.id} and ${orders.status} <> 'CANCELLED'
+        )`,
       })
       .from(prescriptionItems)
       .leftJoin(medicines, eq(medicines.id, prescriptionItems.medicineId))
@@ -97,7 +104,7 @@ export function createPrescriptionRepository(
         patient: { id: p.patientId, name: patientName, age: patientDob ? ageOn(patientDob, now()) : null },
         items: items
           .filter(({ item }) => item.prescriptionId === p.id)
-          .map(({ item: i, pricePaise, packSize }) => ({
+          .map(({ item: i, pricePaise, packSize, orderedQuantity }) => ({
             id: i.id,
             medicineId: i.medicineId,
             medicineName: i.medicineName,
@@ -109,6 +116,7 @@ export function createPrescriptionRepository(
             inCatalog: i.medicineId !== null,
             pricePaise,
             packSize,
+            orderedQuantity: Number(orderedQuantity),
           })),
         generalInstructions: p.generalInstructions,
         validDays: p.validDays,
