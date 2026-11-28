@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.lg,
     gap: spacing.md,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     minHeight: 52,
   },
-  body: { padding: spacing.md, gap: spacing.md, marginTop: -spacing.md },
+  body: { padding: spacing.md, gap: spacing.md },
   kicker: { fontWeight: '800', letterSpacing: 0.6 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   action: {

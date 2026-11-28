@@ -19,8 +19,8 @@ export interface MicButtonProps {
 const LOOK: Record<MicStatus, { bg: keyof typeof colors; word: string; a11y: string }> = {
   idle: { bg: 'primary', word: 'Tap to speak', a11y: 'Voice navigation. Tap and speak a command.' },
   listening: { bg: 'danger', word: 'Listening…', a11y: 'Listening. Speak now, then tap again to stop.' },
-  thinking: { bg: 'accent', word: 'Thinking…', a11y: 'Working on what you said.' },
-  speaking: { bg: 'accent', word: 'Speaking…', a11y: 'Speaking the answer.' },
+  thinking: { bg: 'primaryPressed', word: 'Thinking…', a11y: 'Working on what you said.' },
+  speaking: { bg: 'success', word: 'Speaking…', a11y: 'Speaking the answer.' },
 };
 
 /**
@@ -99,5 +99,12 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   pressed: { opacity: 0.85 },
-  label: { textAlign: 'center' },
+  label: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    overflow: 'hidden',
+    fontWeight: '700',
+  },
 });
