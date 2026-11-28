@@ -1,3 +1,4 @@
+import type { Notify } from '../notifications/notifications';
 import {
   canTransitionOrder,
   generateTrackingId,
@@ -27,7 +28,18 @@ export interface OrderServiceDeps {
   now?: () => Date;
   /** Who fulfils orders: 'local' (pharmacy queue) or 'partner' (external). */
   fulfillmentProvider?: FulfillmentSource;
+  /** Inbox message to the patient on each status change. */
+  notify?: Notify;
 }
+
+const ORDER_WORDS: Record<string, string> = {
+  PENDING: 'received',
+  CONFIRMED: 'confirmed',
+  PACKED: 'packed',
+  SHIPPED: 'on the way',
+  DELIVERED: 'delivered',
+  CANCELLED: 'cancelled',
+};
 
 export function createOrderService({
   repo,
@@ -35,6 +47,7 @@ export function createOrderService({
   audit,
   now = () => new Date(),
   fulfillmentProvider = 'local',
+  notify = async () => undefined,
 }: OrderServiceDeps) {
   const service = {
     async createOrder(actor: OrderServiceActor, request: CreateOrderRequest): Promise<Order> {
@@ -257,6 +270,15 @@ export function createOrderService({
         entityId: order.id,
         metadata: { fromStatus: order.status, toStatus: request.status },
       });
+      if (actor.id !== order.patientId)
+        await notify(order.patientId, {
+          title: `Order ${order.trackingId}: ${ORDER_WORDS[request.status]}`,
+          body:
+            request.status === 'CANCELLED'
+              ? `The pharmacy cancelled it${request.cancelReason ? `: ${request.cancelReason}` : '.'}`
+              : 'Tap to see where your medicines are.',
+          link: `/patient/medicines/order/${order.id}`,
+        });
 
       return updated;
     },

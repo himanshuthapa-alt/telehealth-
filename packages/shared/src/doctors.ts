@@ -122,3 +122,17 @@ export interface DoctorVerificationRequest {
   /** Required when rejecting, so the doctor knows what to fix. */
   note?: string;
 }
+
+/** GET /v1/notifications: the user's own inbox, newest first (50). */
+export interface NotificationList {
+  unread: number;
+  items: {
+    id: string;
+    title: string;
+    body: string;
+    /** App route to open when tapped. */
+    link: string | null;
+    read: boolean;
+    createdAt: string;
+  }[];
+}

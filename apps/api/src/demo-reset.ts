@@ -34,7 +34,7 @@ const database = createDatabase(url);
 try {
   await database.db.transaction(async (tx) => {
     await tx.execute(sql`TRUNCATE order_status_history, order_items, stock_movements, orders,
-      prescription_items, prescriptions, messages, consultation_events, consultations, appointments`);
+      prescription_items, prescriptions, messages, consultation_events, consultations, appointments, notifications`);
     for (const m of SEED_MEDICINES)
       await tx
         .update(medicines)

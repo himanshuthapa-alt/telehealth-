@@ -37,11 +37,11 @@ Legend: ✅ done and tested · 🟡 works with a known gap · ⬜ not built
 | R9  | Consultation lifecycle, waiting room, presence, rejoin (§13)                   | ✅     | `consultations.test.ts`, `room.test.tsx`                                  |
 | R10 | **Real video (100ms)** with chat fallback (§13.2, J4)                          | 🟡     | Adapter + call screen built and unit-tested; needs 100ms keys + 2 devices |
 | R11 | Structured, immutable prescription posted into chat (D8)                       | ✅     | `prescriptions.test.ts` (immutability via API and DB)                     |
-| R12 | Prescription shows doctor's registration number (Telemedicine Guidelines 2020) | ⬜     | P0-1 below                                                                |
+| R12 | Prescription shows doctor's registration number (Telemedicine Guidelines 2020) | ✅     | P0-1 below                                                                |
 | R13 | Order from prescription, stock reservation, COD, tracking ID (D9)              | ✅     | `orders.test.ts`, `fulfillment.test.ts`                                   |
 | R14 | Pharmacy queue + inventory, status timeline (D10)                              | ✅     | `orders.test.ts`                                                          |
 | R15 | Voice navigation (Bolo) EN/HI/Hinglish                                         | ✅     | `voice.test.ts`, `intents.test.ts`                                        |
-| R16 | Notification inbox ("prescription ready", order updates) (Ph. 9)               | ⬜     | P1-1 below                                                                |
+| R16 | Notification inbox ("prescription ready", order updates) (Ph. 9)               | ✅     | `journey.test.ts` (inbox per step), `inbox.test.tsx`                      |
 | R17 | Hosted API + DB, installable APK (Ph. 11)                                      | ⬜     | P0-3, P0-4 below                                                          |
 | R18 | Web build for admin / pharmacy / testing (T5)                                  | ✅     | Runs in Chrome, icons included (BUG-04 fixed)                             |
 | R19 | Security: RBAC, ownership 404s, audit log, no secrets in client                | ✅     | `auth.test.ts`, ownership tests in every module, `SECURITY.md`            |
@@ -65,13 +65,13 @@ Each item has an acceptance test. **P0 = needed for the demo. P1 = should do. P2
 
 ### P1 — should have
 
-| ID   | Work                                                                                       | Acceptance                                                                |
-| ---- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
-| P1-1 | Notification inbox (Phase 9): prescription issued, order status changed, booking cancelled | Bell on Home with unread count; tapping opens the right screen; API tests |
-| P1-2 | Low-network pass (Phase 10): Android emulator 3G profile + airplane-mode toggles           | No screen hangs; every write shows retry; chat outbox survives reconnect  |
-| P1-3 | Accessibility pass: TalkBack walk of the main journey, 1.3× font, 48 dp targets            | Checklist in TESTING.md ticked                                            |
-| P1-4 | ✅ Done. Web icons (BUG-04): a web fallback for `expo-symbols` (Material icons font)       | Icons visible in Chrome                                                   |
-| P1-5 | Doctor "Prescriptions issued" list screen                                                  | Lists the doctor's prescriptions, opens detail                            |
+| ID   | Work                                                                                                | Acceptance                                                                |
+| ---- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| P1-1 | ✅ Done. Notification inbox (Phase 9): prescription issued, order status changed, booking cancelled | Bell on Home with unread count; tapping opens the right screen; API tests |
+| P1-2 | Low-network pass (Phase 10): Android emulator 3G profile + airplane-mode toggles                    | No screen hangs; every write shows retry; chat outbox survives reconnect  |
+| P1-3 | Accessibility pass: TalkBack walk of the main journey, 1.3× font, 48 dp targets                     | Checklist in TESTING.md ticked                                            |
+| P1-4 | ✅ Done. Web icons (BUG-04): a web fallback for `expo-symbols` (Material icons font)                | Icons visible in Chrome                                                   |
+| P1-5 | Doctor "Prescriptions issued" list screen                                                           | Lists the doctor's prescriptions, opens detail                            |
 
 ### P2 — nice to have (do not start before P0/P1 are done)
 
@@ -228,6 +228,7 @@ Environment: local API + Postgres (Docker), Expo web build in Chrome, Android em
 | BUG-07 | Low                | check             | Doctor Today test mock didn't answer the new stats request                                             | Fixed                                                                           |
 | BUG-08 | **Critical**       | `journey.test.ts` | `POST /v1/orders` crashed with 500 for everyone: the route used the role guard without the login guard | Fixed at the root: the role guard now authenticates itself; regression asserted |
 | BUG-09 | **High** (privacy) | review            | `GET /v1/orders/track/:id` was public and returned name, phone, address and medicines                  | Fixed: login required, patients only see their own (404 otherwise)              |
+| BUG-10 | Medium             | route audit       | Public `/v1/speech` (CPU-heavy TTS) had no rate limit and no upstream timeout                          | Fixed: 60 req / 15 min per IP, 90 s timeout                                     |
 
 ---
 

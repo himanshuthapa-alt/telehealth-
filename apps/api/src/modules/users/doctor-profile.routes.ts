@@ -1,3 +1,4 @@
+import type { Notify } from '../notifications/notifications';
 import { Router } from 'express';
 import { z } from 'zod';
 import { DOCTOR_VERIFICATION_STATUSES, LANGUAGES, SPECIALIZATIONS } from '@telecare/shared';
@@ -47,6 +48,7 @@ export function doctorProfileRoutes(
   profiles: DoctorProfileRepository,
   audit: AuditLog,
   guards: AuthGuards,
+  notify: Notify = async () => undefined,
 ): Router {
   const router = Router();
   const doctorOnly = [guards.requireAuth, guards.requireRole('DOCTOR')];
@@ -93,6 +95,12 @@ export function doctorProfileRoutes(
       metadata: { status: body.status },
       ip: req.ip,
     });
+    await notify(
+      id,
+      body.status === 'APPROVED'
+        ? { title: 'You are approved', body: 'Patients can now find and book you.', link: '/doctor/today' }
+        : { title: 'Registration not approved', body: note ?? '', link: '/doctor/today' },
+    );
     res.status(204).end();
   });
 

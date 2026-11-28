@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import { createRateLimiter } from '../../platform/http/rate-limit';
 import { parseQuery } from '../../platform/http/validate';
 
 const SpeechQuery = z.strictObject({
@@ -13,8 +14,11 @@ const SpeechQuery = z.strictObject({
  */
 export function speechRoutes(ttsBaseUrl: string): Router {
   const router = Router();
+  // Public and CPU-heavy upstream: cap per IP so nobody can tie up the TTS service.
+  const perIp = createRateLimiter({ max: 60, windowMs: 15 * 60 * 1000 });
 
   router.get('/v1/speech', async (req, res) => {
+    perIp.hit(req.ip ?? 'unknown');
     const { text } = parseQuery(SpeechQuery, req);
 
     let upstream: Response;
@@ -23,6 +27,8 @@ export function speechRoutes(ttsBaseUrl: string): Router {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ input: text }),
+        // CPU-only Chatterbox can take tens of seconds; never hang a request forever.
+        signal: AbortSignal.timeout(90_000),
       });
     } catch {
       // Chatterbox not running / unreachable.

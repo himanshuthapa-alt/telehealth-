@@ -1,3 +1,4 @@
+import { InboxBell } from '@/features/notifications/Inbox';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
@@ -45,7 +46,12 @@ export default function Home() {
 
   return (
     <Screen edges={['top']}>
-      <AppText variant="title">Namaste, {firstName}</AppText>
+      <View style={styles.greeting}>
+        <AppText variant="title" style={{ flex: 1 }}>
+          Namaste, {firstName}
+        </AppText>
+        <InboxBell />
+      </View>
 
       {next && (
         <View style={styles.tokenGroup}>
@@ -134,6 +140,7 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
+  greeting: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   section: { gap: spacing.md },
   tokenGroup: { gap: spacing.sm, marginBottom: spacing.md },
   step: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },

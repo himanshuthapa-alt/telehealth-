@@ -40,6 +40,7 @@ import { createPrescriptionService } from './modules/prescriptions/prescriptions
 import { createOrderRepository } from './modules/orders/orders.repository';
 import { createOrderService } from './modules/orders/orders.service';
 import { orderRoutes } from './modules/orders/orders.routes';
+import { createNotifications } from './modules/notifications/notifications';
 import { speechRoutes } from './modules/speech/speech.routes';
 import { voiceRoutes } from './modules/voice/voice.routes';
 import { addDays, istInstant, type DoctorSource, type FulfillmentSource } from '@telecare/shared';
@@ -118,7 +119,16 @@ export function createApp(deps: AppDeps) {
   app.use(authRoutes(authService, guards));
   app.use(usersRoutes(createPatientProfileRepository(deps.db), guards));
   const now = deps.now ?? (() => new Date());
-  app.use(doctorProfileRoutes(createDoctorProfileRepository(deps.db, now), createAuditLog(deps.db), guards));
+  const inbox = createNotifications(deps.db);
+  app.use(inbox.routes(guards));
+  app.use(
+    doctorProfileRoutes(
+      createDoctorProfileRepository(deps.db, now),
+      createAuditLog(deps.db),
+      guards,
+      inbox.notify,
+    ),
+  );
   const directory =
     deps.doctorProvider === 'practo' ? createPractoDirectory() : createDoctorDirectory(deps.db, now);
   const schedule = createScheduleRepository(deps.db);
@@ -158,6 +168,7 @@ export function createApp(deps: AppDeps) {
         catalog,
         audit: createAuditLog(deps.db),
         now,
+        notify: inbox.notify,
       }),
       guards,
     ),
@@ -166,7 +177,13 @@ export function createApp(deps: AppDeps) {
   app.locals.sweepConsultations = consultationService.sweep;
   app.use(
     appointmentRoutes(
-      createAppointmentService({ repo: appointmentRepo, slots, audit: createAuditLog(deps.db), now }),
+      createAppointmentService({
+        repo: appointmentRepo,
+        slots,
+        audit: createAuditLog(deps.db),
+        now,
+        notify: inbox.notify,
+      }),
       guards,
     ),
   );
@@ -176,6 +193,7 @@ export function createApp(deps: AppDeps) {
     audit: createAuditLog(deps.db),
     now,
     fulfillmentProvider: deps.fulfillmentProvider,
+    notify: inbox.notify,
   });
   app.use(orderRoutes(orderService, guards));
   app.use(speechRoutes(deps.ttsBaseUrl));

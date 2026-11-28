@@ -78,6 +78,13 @@
       "when": 1795847123800,
       "tag": "0010_doctor_qualification",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1795847532885,
+      "tag": "0011_notifications",
+      "breakpoints": true
     }
   ]
 }

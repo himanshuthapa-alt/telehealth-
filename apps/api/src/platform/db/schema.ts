@@ -10,3 +10,4 @@ export * from '../../modules/consultations/consultations.schema';
 export * from '../../modules/pharmacy/pharmacy.schema';
 export * from '../../modules/prescriptions/prescriptions.schema';
 export * from '../../modules/orders/orders.schema';
+export * from '../../modules/notifications/notifications.schema';

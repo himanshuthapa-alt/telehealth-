@@ -1,4 +1,6 @@
+import { View } from 'react-native';
 import { router } from 'expo-router';
+import { InboxBell } from '@/features/notifications/Inbox';
 import { istDate } from '@telecare/shared';
 import { AppointmentList } from '@/features/appointments/AppointmentList';
 import { formatDay } from '@/features/appointments/format';
@@ -12,7 +14,12 @@ export default function Today() {
   const name = state.status === 'signedIn' ? state.user.fullName : '';
   return (
     <Screen>
-      <AppText variant="title">{formatDay(istDate(new Date()))}</AppText>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <AppText variant="title" style={{ flex: 1 }}>
+          {formatDay(istDate(new Date()))}
+        </AppText>
+        <InboxBell />
+      </View>
       <AppText color="textMuted">{name}</AppText>
       <StatsRow />
       <AppointmentList

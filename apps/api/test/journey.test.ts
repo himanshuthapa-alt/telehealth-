@@ -7,6 +7,7 @@ import type {
   DoctorCard,
   DoctorStats,
   JoinResponse,
+  NotificationList,
   Order,
   Page,
   Prescription,
@@ -238,7 +239,26 @@ describe('the full demo journey', () => {
     // A route guarded only by requireRole still demands a login (it used to crash with 500).
     expect((await api('POST', '/v1/orders', undefined, {})).status).toBe(401);
 
-    // 8. The doctor's dashboard counts the completed consultation and its fee.
+    // 8. Inbox: each person was told what happened, newest first, and can mark all read.
+    const patientInbox = await api<NotificationList>('GET', '/v1/notifications', patient.accessToken);
+    expect(patientInbox.body.items.map((n) => n.title)).toEqual([
+      `Order ${order.body.trackingId}: delivered`,
+      `Order ${order.body.trackingId}: on the way`,
+      `Order ${order.body.trackingId}: packed`,
+      `Order ${order.body.trackingId}: confirmed`,
+      'Your prescription is ready',
+    ]);
+    expect(patientInbox.body.items[4]!.link).toBe(`/patient/medicines/prescription/${rx.body.id}`);
+    expect(patientInbox.body.unread).toBe(5);
+    await api('POST', '/v1/notifications/read', patient.accessToken);
+    expect((await api<NotificationList>('GET', '/v1/notifications', patient.accessToken)).body.unread).toBe(
+      0,
+    );
+    const doctorInbox = await api<NotificationList>('GET', '/v1/notifications', doctor.accessToken);
+    expect(doctorInbox.body.items.map((n) => n.title)).toEqual(['New booking', 'You are approved']);
+    expect((await api('GET', '/v1/notifications')).status).toBe(401);
+
+    // 9. The doctor's dashboard counts the completed consultation and its fee.
     const stats = await api<DoctorStats>('GET', '/v1/me/doctor-stats', doctor.accessToken);
     expect(stats.body).toMatchObject({ completed: 1, earningsInr: 250 });
   });

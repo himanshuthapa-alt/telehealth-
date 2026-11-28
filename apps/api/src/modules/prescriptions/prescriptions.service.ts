@@ -1,3 +1,4 @@
+import type { Notify } from '../notifications/notifications';
 import {
   PRESCRIBE_WINDOW_HOURS,
   addDays,
@@ -19,6 +20,8 @@ export interface PrescriptionServiceDeps {
   catalog: MedicineCatalog;
   audit: AuditLog;
   now: () => Date;
+  /** Inbox message to the patient when a prescription is issued. */
+  notify?: Notify;
 }
 
 const notFound = () => new AppError(404, 'NOT_FOUND', 'Prescription not found');
@@ -35,6 +38,7 @@ export function createPrescriptionService({
   catalog,
   audit,
   now,
+  notify = async () => undefined,
 }: PrescriptionServiceDeps) {
   /** Doctors write during the consultation or up to 24 h after it ends (blueprint §12). */
   async function prescribableConsultation(doctor: Actor, consultationId: string) {
@@ -115,6 +119,11 @@ export function createPrescriptionService({
         entityType: 'prescription',
         entityId: id,
         ip,
+      });
+      await notify(row.patientId, {
+        title: 'Your prescription is ready',
+        body: 'Open it to see your medicines, or order them for delivery.',
+        link: `/patient/medicines/prescription/${id}`,
       });
       return view(id);
     },

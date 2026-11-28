@@ -1,3 +1,4 @@
+import type { Notify } from '../notifications/notifications';
 import {
   PATIENT_CANCEL_CUTOFF_MINUTES,
   addDays,
@@ -18,11 +19,31 @@ export interface AppointmentServiceDeps {
   slots: Pick<SlotService, 'slotStartingAt'>;
   audit: AuditLog;
   now: () => Date;
+  /** Inbox messages: new booking to the doctor, cancellation to the other person. */
+  notify?: Notify;
 }
 
 const notFound = () => new AppError(404, 'NOT_FOUND', 'Appointment not found');
 
-export function createAppointmentService({ repo, slots, audit, now }: AppointmentServiceDeps) {
+/** "Mon 3 Mar, 10:00" in IST, for inbox messages. */
+const istLabel = (iso: string) =>
+  new Date(iso).toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+
+export function createAppointmentService({
+  repo,
+  slots,
+  audit,
+  now,
+  notify = async () => undefined,
+}: AppointmentServiceDeps) {
   async function load(id: string, actor: Actor) {
     const appointment = await repo.getFor(id, actor);
     if (!appointment) throw notFound(); // not yours looks the same as not there (blueprint §12 rule 3)
@@ -75,7 +96,13 @@ export function createAppointmentService({ repo, slots, audit, now }: Appointmen
         entityId: result.id,
         ip,
       });
-      return { appointment: await load(result.id, patient), created: true };
+      const booked = await load(result.id, patient);
+      await notify(input.doctorId, {
+        title: 'New booking',
+        body: `${booked.patient.name} booked ${istLabel(booked.startAt)}.`,
+        link: `/doctor/appointments/${booked.id}`,
+      });
+      return { appointment: booked, created: true };
     },
 
     get: load,
@@ -113,6 +140,14 @@ export function createAppointmentService({ repo, slots, audit, now }: Appointmen
         entityType: 'appointment',
         entityId: id,
         ip,
+      });
+      const byDoctor = actor.role === 'DOCTOR';
+      await notify(byDoctor ? appointment.patient.id : appointment.doctor.id, {
+        title: 'Booking cancelled',
+        body: byDoctor
+          ? `${appointment.doctor.name} cancelled ${istLabel(appointment.startAt)}: ${reason}`
+          : `${appointment.patient.name} cancelled ${istLabel(appointment.startAt)}.`,
+        link: byDoctor ? `/patient/appointments/${id}` : `/doctor/appointments/${id}`,
       });
       return load(id, actor);
     },

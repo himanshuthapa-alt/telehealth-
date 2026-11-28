@@ -65,6 +65,15 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen
+            name="notifications"
+            options={{
+              headerShown: true,
+              title: 'Notifications',
+              headerTintColor: colors.primary,
+              headerStyle: { backgroundColor: colors.background },
+            }}
+          />
+          <Stack.Screen
             name="change-password"
             options={{ headerShown: true, title: 'Change password', presentation: 'modal' }}
           />
