@@ -3,6 +3,7 @@ import type { Order, OrderAddress, OrderStatus } from '@telecare/shared';
 import type { Database, DbExecutor } from '../../platform/db/client';
 import { medicines, pharmacies } from '../pharmacy/pharmacy.schema';
 import { users } from '../users/users.schema';
+import { prescriptionItems } from '../prescriptions/prescriptions.schema';
 import { orderItems, orders, orderStatusHistory, stockMovements } from './orders.schema';
 
 export interface CreateOrderParams {
@@ -47,7 +48,7 @@ export interface OrderRepository {
   getDefaultPharmacyId(): Promise<string>;
   getMedicineStock(
     medicineId: string,
-  ): Promise<{ stockQty: number; pricePaise: number; name: string } | null>;
+  ): Promise<{ stockQty: number; pricePaise: number; name: string; requiresPrescription: boolean } | null>;
 }
 
 export function createOrderRepository(db: Database): OrderRepository {
@@ -145,6 +146,7 @@ export function createOrderRepository(db: Database): OrderRepository {
           stockQty: medicines.stockQty,
           pricePaise: medicines.pricePaise,
           name: medicines.name,
+          requiresPrescription: medicines.requiresPrescription,
         })
         .from(medicines)
         .where(eq(medicines.id, medicineId));
@@ -176,6 +178,26 @@ export function createOrderRepository(db: Database): OrderRepository {
             const loaded = await loadOrderWithDetails(existing.id, tx);
             if (loaded) return loaded;
           }
+        }
+
+        // 0. Re-check prescription allowances under a row lock, so two orders placed at the
+        //    same moment can't both pass the service's pre-check and exceed the prescription.
+        for (const item of params.items) {
+          if (!item.prescriptionItemId) continue;
+          const [rxItem] = await tx
+            .select({ quantity: prescriptionItems.quantity })
+            .from(prescriptionItems)
+            .where(eq(prescriptionItems.id, item.prescriptionItemId))
+            .for('update');
+          const [ordered] = await tx
+            .select({ qty: sql<number>`coalesce(sum(${orderItems.quantity}), 0)::integer` })
+            .from(orderItems)
+            .innerJoin(orders, eq(orderItems.orderId, orders.id))
+            .where(
+              and(eq(orderItems.prescriptionItemId, item.prescriptionItemId), ne(orders.status, 'CANCELLED')),
+            );
+          if (!rxItem || (ordered?.qty ?? 0) + item.quantity > rxItem.quantity)
+            throw new Error(`QUANTITY_EXCEEDS_PRESCRIPTION: ${item.medicineName}`);
         }
 
         // 1. Reserve stock for each item (must not go below 0)

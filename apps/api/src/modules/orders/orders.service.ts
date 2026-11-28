@@ -1,5 +1,6 @@
 import type { Notify } from '../notifications/notifications';
 import {
+  istDate,
   canTransitionOrder,
   generateTrackingId,
   isExpired,
@@ -59,7 +60,10 @@ export function createOrderService({
         throw new AppError(400, 'VALIDATION_FAILED', 'Order must have at least one medicine item');
       }
 
-      const todayStr = now().toISOString().slice(0, 10);
+      // IST calendar date: prescriptions expire at IST midnight, not UTC midnight.
+      const todayStr = istDate(now());
+      if (!request.prescriptionId && request.items.some((i) => i.prescriptionItemId))
+        throw new AppError(400, 'INVALID_PRESCRIPTION_ITEM', 'Prescription items need their prescription');
       let prescriptionId: string | null = null;
 
       // If ordering from a prescription, validate prescription rules
@@ -85,7 +89,8 @@ export function createOrderService({
         for (const item of request.items) {
           if (item.prescriptionItemId) {
             const rxItem = rx.items.find((i) => i.id === item.prescriptionItemId);
-            if (!rxItem) {
+            // The line must be the same medicine the doctor prescribed, not just any line's allowance.
+            if (!rxItem || rxItem.medicineId !== item.medicineId) {
               throw new AppError(
                 400,
                 'INVALID_PRESCRIPTION_ITEM',
@@ -130,6 +135,14 @@ export function createOrderService({
           throw new AppError(404, 'NOT_FOUND', 'Medicine not found in catalog');
         }
 
+        if (med.requiresPrescription && !item.prescriptionItemId) {
+          throw new AppError(
+            400,
+            'PRESCRIPTION_REQUIRED',
+            `${med.name} needs a doctor's prescription. Order it from your prescription.`,
+          );
+        }
+
         if (med.stockQty < item.quantity) {
           throw new AppError(
             400,
@@ -168,6 +181,13 @@ export function createOrderService({
       } catch (err: unknown) {
         if (err instanceof Error && err.message.startsWith('INSUFFICIENT_STOCK')) {
           throw new AppError(400, 'INSUFFICIENT_STOCK', err.message);
+        }
+        if (err instanceof Error && err.message.startsWith('QUANTITY_EXCEEDS_PRESCRIPTION')) {
+          throw new AppError(
+            400,
+            'QUANTITY_EXCEEDS_PRESCRIPTION',
+            'This is more than the prescription allows',
+          );
         }
         throw err;
       }

@@ -174,7 +174,22 @@ Rule: nothing new after day 9. Every change after that must fix a bug found in a
 
 **Prescription (RX)** — draft/issue/void/revise, immutability (API + DB), 24 h window, ownership 404s, chat card: all **Auto** `prescriptions.test.ts`; live check E2E-15. RX-NEW: registration number on the card (P0-1).
 
-**Orders & pharmacy (ORD)** — order only from an issued prescription and within quantity, stock reserved atomically, out-of-stock refused, patient cancel only while PENDING, pharmacy transitions in order only, cancel needs a reason, tracking ID format, cross-user 404: **Auto** `orders.test.ts`, `fulfillment.test.ts`; live check E2E-16/17.
+**Orders & pharmacy (ORD)** — all **Auto** in `orders-api.test.ts` (HTTP, real DB) unless noted:
+
+| ID     | Case                                                                        | Expected                                   |
+| ------ | --------------------------------------------------------------------------- | ------------------------------------------ |
+| ORD-01 | Order from prescription within quantity; more than remaining refused        | 201 / `QUANTITY_EXCEEDS_PRESCRIPTION`      |
+| ORD-02 | Prescription-only medicine without a prescription                           | `PRESCRIPTION_REQUIRED`; OTC is allowed    |
+| ORD-03 | Prescription line used for a different medicine / without its Rx            | `INVALID_PRESCRIPTION_ITEM` / 400          |
+| ORD-04 | 3 simultaneous orders against one prescription line                         | Only what the prescription allows succeeds |
+| ORD-05 | 4 buyers, 3 in stock, at the same moment                                    | 3 succeed, 1 `INSUFFICIENT_STOCK`          |
+| ORD-06 | Same idempotency key twice                                                  | Same order                                 |
+| ORD-07 | Another patient's order / doctor creating an order                          | 404 / 403                                  |
+| ORD-08 | Patient cancel while PENDING (stock returns) / after CONFIRMED              | 200 / 409                                  |
+| ORD-09 | Pharmacy cancel without / with a reason; skipping a step                    | 400 / 200; 409                             |
+| ORD-10 | Tracking: own order / another patient / logged out                          | 200 / 404 / 401 (`journey.test.ts`)        |
+| ORD-11 | Pharmacy stock: exact count staff-only, never below zero, staff-only adjust | `journey.test.ts`                          |
+| ORD-12 | State machine and tracking-ID format (pure functions)                       | `orders.test.ts`                           |
 
 **Security (SEC)**
 
@@ -217,20 +232,25 @@ Environment: local API + Postgres (Docker), Expo web build in Chrome, Android em
 
 ## 7. Bug log
 
-| ID     | Severity           | Found in          | Description                                                                                            | Status                                                                                   |
-| ------ | ------------------ | ----------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| BUG-01 | Medium             | E2E-11            | Days without hours were labelled "Full" (sounds booked out)                                            | Fixed: "No times"                                                                        |
-| BUG-02 | Medium             | E2E-12            | Review screen promised cancelling "up to 2 h before" for a slot < 2 h away                             | Fixed: says it can't be cancelled                                                        |
-| BUG-03 | Low                | E2E-03            | "Verify doctors" title shown twice (tab header + screen title)                                         | Fixed                                                                                    |
-| BUG-04 | Low                | E2E-01            | Icons don't render on the web build (`expo-symbols` is native-only)                                    | Fixed: `Icon.web.tsx` uses the Material Symbols web font                                 |
-| BUG-05 | High               | review            | Unverified doctor could call doctor APIs directly (only the app hid them)                              | Fixed: server guard + tests                                                              |
-| BUG-06 | Medium             | E2E-01            | Web build couldn't log in (no secure storage on web) or reach the API (no CORS)                        | Fixed                                                                                    |
-| BUG-07 | Low                | check             | Doctor Today test mock didn't answer the new stats request                                             | Fixed                                                                                    |
-| BUG-08 | **Critical**       | `journey.test.ts` | `POST /v1/orders` crashed with 500 for everyone: the route used the role guard without the login guard | Fixed at the root: the role guard now authenticates itself; regression asserted          |
-| BUG-09 | **High** (privacy) | review            | `GET /v1/orders/track/:id` was public and returned name, phone, address and medicines                  | Fixed: login required, patients only see their own (404 otherwise)                       |
-| BUG-10 | Medium             | route audit       | Public `/v1/speech` (CPU-heavy TTS) had no rate limit and no upstream timeout                          | Fixed: 60 req / 15 min per IP, 90 s timeout                                              |
-| BUG-11 | Medium             | E2E (pharmacy)    | Blueprint J9 missing: pharmacy could not see exact stock or adjust it                                  | Fixed: exact counts for staff only, −1/+1/+10 adjust, never below zero, logged as ADJUST |
-| BUG-12 | Low                | E2E-06            | Doctor profile "Saved." message appeared off-screen at the top of the form                             | Fixed: shown beside the button                                                           |
+| ID     | Severity           | Found in             | Description                                                                                                         | Status                                                                                   |
+| ------ | ------------------ | -------------------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| BUG-01 | Medium             | E2E-11               | Days without hours were labelled "Full" (sounds booked out)                                                         | Fixed: "No times"                                                                        |
+| BUG-02 | Medium             | E2E-12               | Review screen promised cancelling "up to 2 h before" for a slot < 2 h away                                          | Fixed: says it can't be cancelled                                                        |
+| BUG-03 | Low                | E2E-03               | "Verify doctors" title shown twice (tab header + screen title)                                                      | Fixed                                                                                    |
+| BUG-04 | Low                | E2E-01               | Icons don't render on the web build (`expo-symbols` is native-only)                                                 | Fixed: `Icon.web.tsx` uses the Material Symbols web font                                 |
+| BUG-05 | High               | review               | Unverified doctor could call doctor APIs directly (only the app hid them)                                           | Fixed: server guard + tests                                                              |
+| BUG-06 | Medium             | E2E-01               | Web build couldn't log in (no secure storage on web) or reach the API (no CORS)                                     | Fixed                                                                                    |
+| BUG-07 | Low                | check                | Doctor Today test mock didn't answer the new stats request                                                          | Fixed                                                                                    |
+| BUG-08 | **Critical**       | `journey.test.ts`    | `POST /v1/orders` crashed with 500 for everyone: the route used the role guard without the login guard              | Fixed at the root: the role guard now authenticates itself; regression asserted          |
+| BUG-09 | **High** (privacy) | review               | `GET /v1/orders/track/:id` was public and returned name, phone, address and medicines                               | Fixed: login required, patients only see their own (404 otherwise)                       |
+| BUG-10 | Medium             | route audit          | Public `/v1/speech` (CPU-heavy TTS) had no rate limit and no upstream timeout                                       | Fixed: 60 req / 15 min per IP, 90 s timeout                                              |
+| BUG-11 | Medium             | E2E (pharmacy)       | Blueprint J9 missing: pharmacy could not see exact stock or adjust it                                               | Fixed: exact counts for staff only, −1/+1/+10 adjust, never below zero, logged as ADJUST |
+| BUG-12 | Low                | E2E-06               | Doctor profile "Saved." message appeared off-screen at the top of the form                                          | Fixed: shown beside the button                                                           |
+| BUG-13 | **High**           | `orders-api.test.ts` | Prescription-only medicines (e.g. antibiotics) could be ordered without any prescription                            | Fixed: `PRESCRIPTION_REQUIRED` unless ordered from an issued prescription line           |
+| BUG-14 | **High**           | `orders-api.test.ts` | A prescription line could be used to order a different medicine; a line without its prescription skipped all checks | Fixed: line must match the prescribed medicine and its prescription                      |
+| BUG-15 | Medium             | code review          | Prescribed-quantity check ran outside the order transaction (two simultaneous orders could exceed it)               | Fixed: re-checked inside the transaction under a row lock; concurrency test              |
+| BUG-16 | Low                | code review          | Prescription expiry compared against the UTC date, not IST                                                          | Fixed: `istDate(now())`                                                                  |
+| BUG-17 | Process            | audit                | Order rules had **no HTTP tests** at all (only pure-function tests), which is how BUG-08 shipped                    | Fixed: `orders-api.test.ts` (8 cases incl. stock and prescription races)                 |
 
 ---
 
