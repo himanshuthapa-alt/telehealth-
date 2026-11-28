@@ -61,6 +61,8 @@ export interface AppDeps {
   doctorProvider: DoctorSource;
   /** Who fulfils orders: 'local' (pharmacy queue) or 'partner' (external stub). */
   fulfillmentProvider: FulfillmentSource;
+  /** Browser origins allowed to call the API (the web build). Native apps don't need CORS. */
+  corsOrigins?: string[];
 }
 
 /**
@@ -74,6 +76,22 @@ export function createApp(deps: AppDeps) {
   app.set('trust proxy', 1);
 
   app.use(requestContext(deps.logger));
+  // Bearer tokens only (no cookies), so CORS just has to name the allowed web origins.
+  const corsOrigins = new Set(deps.corsOrigins ?? []);
+  app.use((req, res, next) => {
+    const origin = req.get('origin');
+    if (origin && corsOrigins.has(origin)) {
+      res.set({
+        'Access-Control-Allow-Origin': origin,
+        Vary: 'Origin',
+        'Access-Control-Allow-Headers': 'authorization, content-type, idempotency-key',
+        'Access-Control-Allow-Methods': 'GET, POST, PATCH, PUT, DELETE',
+        'Access-Control-Max-Age': '600',
+      });
+      if (req.method === 'OPTIONS') return void res.status(204).end();
+    }
+    next();
+  });
   app.use(express.json({ limit: '100kb' }));
 
   const repos = (db: Parameters<typeof createAuditLog>[0]): AuthRepos => ({

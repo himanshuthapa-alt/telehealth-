@@ -66,6 +66,8 @@ export type DoctorVerificationStatus = (typeof DOCTOR_VERIFICATION_STATUSES)[num
 
 /** The doctor-editable part of a profile (sign-up and PATCH /v1/me/doctor-profile). */
 export interface DoctorProfileFields {
+  /** Degrees, e.g. "MBBS, MD (Paediatrics)". Printed on prescriptions (Telemedicine Practice Guidelines 2020). */
+  qualification: string;
   specializations: Specialization[];
   languages: Language[];
   experienceYears: number;

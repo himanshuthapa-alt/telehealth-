@@ -18,6 +18,16 @@ const EnvSchema = z
     /** Role names in the 100ms template. */
     HMS_DOCTOR_ROLE: z.string().default('host'),
     HMS_PATIENT_ROLE: z.string().default('guest'),
+    /** Comma-separated web origins allowed to call the API (the Expo web build). */
+    CORS_ORIGINS: z
+      .string()
+      .default('http://localhost:8081,http://localhost:8082')
+      .transform((v) =>
+        v
+          .split(',')
+          .map((o) => o.trim())
+          .filter(Boolean),
+      ),
     LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error', 'silent']).default('info'),
     /** Chatterbox TTS service base URL (text-to-speech voice output). */
     TTS_BASE_URL: z.url().default('http://localhost:4123'),

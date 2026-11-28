@@ -48,6 +48,7 @@ const app = createApp({
   ttsBaseUrl: config.TTS_BASE_URL,
   doctorProvider: config.DOCTOR_PROVIDER,
   fulfillmentProvider: config.FULFILLMENT_PROVIDER,
+  corsOrigins: config.CORS_ORIGINS,
 });
 
 // Close consultations whose join window has passed.

@@ -16,6 +16,7 @@ import { doctorProfiles } from './doctor-profile.schema';
 import { users } from './users.schema';
 
 const editable = {
+  qualification: sql<string>`coalesce(${doctorProfiles.qualification}, '')`,
   specializations: doctorProfiles.specializations,
   languages: doctorProfiles.languages,
   experienceYears: doctorProfiles.experienceYears,

@@ -11,6 +11,7 @@ import { AppText, Chip, TextField, spacing } from '@/ui';
 
 /** Form state for the doctor-editable fields; numbers stay strings while typing. */
 export interface DoctorFieldsDraft {
+  qualification: string;
   specializations: Specialization[];
   languages: Language[];
   experienceYears: string;
@@ -19,6 +20,7 @@ export interface DoctorFieldsDraft {
 }
 
 export const emptyDoctorDraft: DoctorFieldsDraft = {
+  qualification: '',
   specializations: [],
   languages: [],
   experienceYears: '',
@@ -41,6 +43,7 @@ export function validateDoctorDraft(
   const problems: Record<string, string> = {};
   const experienceYears = wholeNumber(d.experienceYears);
   const feeInr = wholeNumber(d.feeInr);
+  if (d.qualification.trim().length < 2) problems.qualification = 'Enter your qualification, e.g. MBBS, MD';
   if (!d.specializations.length) problems.specializations = 'Choose at least one specialization';
   if (!d.languages.length) problems.languages = 'Choose at least one language';
   if (experienceYears === null || experienceYears > 70) problems.experienceYears = 'Enter years, 0 to 70';
@@ -50,6 +53,7 @@ export function validateDoctorDraft(
   return {
     ok: true,
     fields: {
+      qualification: d.qualification.trim(),
       specializations: d.specializations,
       languages: d.languages,
       experienceYears,
@@ -77,6 +81,15 @@ export function DoctorFieldsForm({
 
   return (
     <>
+      <TextField
+        label="Qualification"
+        value={value.qualification}
+        onChangeText={(t) => set('qualification', t)}
+        placeholder="MBBS, MD (Paediatrics)"
+        hint="Printed on your prescriptions."
+        maxLength={120}
+        error={error('qualification')}
+      />
       <ChipGroup
         label="Specializations"
         options={SPECIALIZATIONS}

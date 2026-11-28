@@ -71,6 +71,8 @@ async function makeUser(role: Role) {
       languages: ['Hindi'],
       experienceYears: 5,
       feeInr: 300,
+      qualification: 'MBBS, MD',
+      registrationNumber: `UPMC-${phone.slice(-5)}`,
     });
   const res = await fetch(`${server.url}/v1/auth/login`, {
     method: 'POST',
@@ -288,9 +290,13 @@ describe('issuing', () => {
       itemCount: 2,
     });
 
-    expect(
-      (await api<Prescription>('GET', `/v1/prescriptions/${prescription.id}`, patient.token)).body.items,
-    ).toHaveLength(2);
+    const seen = (await api<Prescription>('GET', `/v1/prescriptions/${prescription.id}`, patient.token)).body;
+    expect(seen.items).toHaveLength(2);
+    // Telemedicine Practice Guidelines 2020: the prescription names the doctor's qualification and registration.
+    expect(seen.doctor).toMatchObject({
+      qualification: 'MBBS, MD',
+      registrationNumber: expect.stringMatching(/^UPMC-/),
+    });
     expect(
       (await api<Prescription[]>('GET', '/v1/prescriptions', patient.token)).body.map((p) => p.id),
     ).toEqual([prescription.id]);

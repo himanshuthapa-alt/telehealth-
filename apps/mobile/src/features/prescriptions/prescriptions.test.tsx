@@ -29,7 +29,7 @@ const base: Prescription = {
   id: 'rx1',
   consultationId: 'c1',
   status: 'ISSUED',
-  doctor: { id: 'doc1', name: 'Dr. Meera Iyer' },
+  doctor: { id: 'doc1', name: 'Dr. Meera Iyer', qualification: 'MBBS, MD', registrationNumber: 'DMC-1234' },
   patient: { id: 'pat1', name: 'Asha Devi', age: 34 },
   items: [
     {
@@ -89,6 +89,8 @@ describe('patient prescription', () => {
     expect(screen.getByText('After food')).toBeOnTheScreen();
     expect(screen.getByText(/Not sold by the TeleCare\+ pharmacy/)).toBeOnTheScreen(); // the free-text item
     expect(screen.getByText(/Valid until/)).toBeOnTheScreen();
+    // Telemedicine Practice Guidelines 2020: qualification and registration number on every prescription.
+    expect(screen.getByText('MBBS, MD · Reg. no. DMC-1234')).toBeOnTheScreen();
   });
 
   it('a withdrawn prescription says so and must not be used', async () => {

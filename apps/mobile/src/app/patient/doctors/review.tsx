@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import * as Crypto from 'expo-crypto';
 import { router, useLocalSearchParams } from 'expo-router';
-import { REASON_NOTE_MAX, istDate } from '@telecare/shared';
+import { REASON_NOTE_MAX, istDate, patientCanCancel } from '@telecare/shared';
 import { hasCode, useBookAppointment } from '@/features/appointments/appointment-queries';
 import { formatDay, formatTime, formatWhen } from '@/features/appointments/format';
 import { useDoctor } from '@/features/doctors/doctor-queries';
@@ -61,7 +61,9 @@ export default function Review() {
         />
       )}
       <AppText variant="small" color="textMuted" style={{ textAlign: 'center' }}>
-        You can cancel up to 2 hours before the start.
+        {patientCanCancel({ status: 'BOOKED', startAt }, new Date())
+          ? 'You can cancel up to 2 hours before the start.'
+          : 'This time is less than 2 hours away, so it can’t be cancelled once booked.'}
       </AppText>
     </Screen>
   );

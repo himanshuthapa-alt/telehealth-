@@ -71,6 +71,13 @@
       "when": 1795843331244,
       "tag": "0009_doctor_verification",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795847123800,
+      "tag": "0010_doctor_qualification",
+      "breakpoints": true
     }
   ]
 }

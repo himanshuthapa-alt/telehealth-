@@ -54,7 +54,13 @@ try {
       (await users.findByPhone(phone));
     const added = await database.db
       .insert(doctorProfiles)
-      .values({ userId: user!.id, ...profile, isDemo: true, registrationNumber: `DEMO-${phone.slice(-4)}` })
+      .values({
+        userId: user!.id,
+        ...profile,
+        isDemo: true,
+        qualification: 'MBBS (demo)',
+        registrationNumber: `DEMO-${phone.slice(-4)}`,
+      })
       .onConflictDoNothing()
       .returning({ id: doctorProfiles.userId });
     doctorsAdded += added.length;

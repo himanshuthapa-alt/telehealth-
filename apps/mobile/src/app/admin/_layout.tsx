@@ -9,6 +9,7 @@ export default function Layout() {
         name="doctors"
         options={{
           title: 'Verify doctors',
+          headerShown: false,
           tabBarIcon: tabIcon({ ios: 'checkmark.seal', android: 'verified' }),
         }}
       />

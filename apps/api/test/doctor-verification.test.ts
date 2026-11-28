@@ -51,6 +51,7 @@ const signup = {
   password: PASSWORD,
   consent: true,
   registrationNumber: 'MMC-2019/12345',
+  qualification: 'MBBS, DCH',
   specializations: ['Pediatrics'],
   languages: ['Hindi', 'English'],
   experienceYears: 6,
@@ -79,7 +80,11 @@ describe('doctor self-registration and verification', () => {
   it('creates a DOCTOR account whose profile is PENDING and hidden from patients', async () => {
     expect(doctor.user.role).toBe('DOCTOR');
     const me = await call<MyDoctorProfile>('GET', '/v1/me/doctor-profile', undefined, doctor.accessToken);
-    expect(me.body).toMatchObject({ verificationStatus: 'PENDING', registrationNumber: 'MMC-2019/12345' });
+    expect(me.body).toMatchObject({
+      verificationStatus: 'PENDING',
+      registrationNumber: 'MMC-2019/12345',
+      qualification: 'MBBS, DCH',
+    });
     expect(await listed()).toEqual([]);
     const slots = await call('GET', `/v1/doctors/${doctor.user.id}/slots`, undefined, patient);
     expect(slots.status).toBe(404);

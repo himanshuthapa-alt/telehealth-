@@ -63,6 +63,7 @@ function DoctorReviewCard({ doctor }: { doctor: DoctorForReview }) {
     <Card>
       <AppText variant="heading">{doctor.fullName}</AppText>
       <Row label="Registration no." value={doctor.registrationNumber ?? '—'} />
+      <Row label="Qualification" value={doctor.qualification || '—'} />
       <Row label="Mobile" value={doctor.phone} />
       <Row label="Specializations" value={doctor.specializations.join(', ')} />
       <Row label="Languages" value={doctor.languages.join(', ')} />

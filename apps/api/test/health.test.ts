@@ -61,3 +61,22 @@ describe('database connection loss', () => {
     }
   });
 });
+
+describe('CORS', () => {
+  it('answers preflight only for allowed web origins', async () => {
+    const { app } = testApp({ corsOrigins: ['http://localhost:8082'] });
+    const s = await listen(app);
+    try {
+      const ok = await fetch(`${s.url}/v1/auth/login`, {
+        method: 'OPTIONS',
+        headers: { origin: 'http://localhost:8082' },
+      });
+      expect(ok.status).toBe(204);
+      expect(ok.headers.get('access-control-allow-origin')).toBe('http://localhost:8082');
+      const other = await fetch(`${s.url}/health`, { headers: { origin: 'https://evil.example' } });
+      expect(other.headers.get('access-control-allow-origin')).toBeNull();
+    } finally {
+      await s.close();
+    }
+  });
+});

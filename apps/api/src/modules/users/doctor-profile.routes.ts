@@ -9,6 +9,7 @@ import type { DoctorProfileRepository } from './doctor-profile.repository';
 
 /** The fields a doctor fills in at sign-up and can edit later. Shared with POST /v1/auth/register/doctor. */
 export const doctorFields = {
+  qualification: z.string().trim().min(2, 'Enter your qualification, e.g. MBBS, MD').max(120),
   specializations: z
     .array(z.enum(SPECIALIZATIONS))
     .min(1, 'Choose at least one specialization')

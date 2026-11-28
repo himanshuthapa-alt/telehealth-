@@ -20,7 +20,7 @@ import {
   spacing,
 } from '@/ui';
 
-/** A day to pick: the day in words and how many free times it has. Full days stay visible but can't be picked. */
+/** A day to pick: the day in words and how many free times it has. Days with none stay visible but can't be picked. */
 function DayButton({
   date,
   free,
@@ -33,7 +33,8 @@ function DayButton({
   onPress: () => void;
 }) {
   const day = formatDay(date);
-  const count = free === 0 ? 'Full' : free === 1 ? '1 free' : `${free} free`;
+  // "No times" not "Full": the API sends only free slots, so a day off and a fully booked day look the same.
+  const count = free === 0 ? 'No times' : free === 1 ? '1 free' : `${free} free`;
   return (
     <Pressable
       accessibilityRole="button"

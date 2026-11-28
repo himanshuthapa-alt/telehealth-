@@ -18,6 +18,16 @@ export function PrescriptionView({ prescription: p }: { prescription: Prescripti
     <>
       <Card>
         <AppText variant="heading">{p.doctor.name}</AppText>
+        {(p.doctor.qualification || p.doctor.registrationNumber) && (
+          <AppText variant="small" color="textMuted">
+            {[
+              p.doctor.qualification,
+              p.doctor.registrationNumber && `Reg. no. ${p.doctor.registrationNumber}`,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </AppText>
+        )}
         <AppText color="textMuted">
           For {p.patient.name}
           {p.patient.age !== null ? `, ${p.patient.age} years` : ''}

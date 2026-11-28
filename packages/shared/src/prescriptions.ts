@@ -80,7 +80,8 @@ export interface Prescription {
   id: string;
   consultationId: string;
   status: PrescriptionStatus;
-  doctor: { id: string; name: string };
+  /** Qualification and registration number are printed on every prescription (Telemedicine Practice Guidelines 2020). */
+  doctor: { id: string; name: string; qualification: string | null; registrationNumber: string | null };
   patient: { id: string; name: string; age: number | null };
   items: PrescriptionItem[];
   generalInstructions: string | null;

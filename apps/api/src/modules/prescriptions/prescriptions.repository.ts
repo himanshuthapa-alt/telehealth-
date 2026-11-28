@@ -3,6 +3,7 @@ import type { Prescription, PrescriptionItemInput, PrescriptionStatus } from '@t
 import type { Database } from '../../platform/db/client';
 import { ageOn } from '../appointments/appointments.repository';
 import { patientProfiles } from '../users/patient-profile.schema';
+import { doctorProfiles } from '../users/doctor-profile.schema';
 import { users } from '../users/users.schema';
 import { prescriptionItems, prescriptions } from './prescriptions.schema';
 
@@ -54,11 +55,15 @@ export function createPrescriptionRepository(
       .select({
         p: prescriptions,
         doctorName: doctorUser.fullName,
+        doctorQualification: doctorProfiles.qualification,
+        doctorRegistration: doctorProfiles.registrationNumber,
         patientName: patientUser.fullName,
         patientDob: patientProfiles.dateOfBirth,
       })
       .from(prescriptions)
       .innerJoin(doctorUser, eq(doctorUser.id, prescriptions.doctorId))
+      // ponytail: shows the doctor's current details, not a copy taken at issue; snapshot them if doctors' numbers ever change
+      .leftJoin(doctorProfiles, eq(doctorProfiles.userId, prescriptions.doctorId))
       .innerJoin(patientUser, eq(patientUser.id, prescriptions.patientId))
       .leftJoin(patientProfiles, eq(patientProfiles.userId, prescriptions.patientId))
       .where(where)
@@ -72,34 +77,41 @@ export function createPrescriptionRepository(
       .from(prescriptionItems)
       .where(sql`${prescriptionItems.prescriptionId} IN ${rows.map((r) => r.p.id)}`)
       .orderBy(asc(prescriptionItems.position));
-    return rows.map(({ p, doctorName, patientName, patientDob }) => ({
-      id: p.id,
-      consultationId: p.consultationId,
-      status: p.status,
-      doctor: { id: p.doctorId, name: doctorName },
-      patient: { id: p.patientId, name: patientName, age: patientDob ? ageOn(patientDob, now()) : null },
-      items: items
-        .filter((i) => i.prescriptionId === p.id)
-        .map((i) => ({
-          id: i.id,
-          medicineId: i.medicineId,
-          medicineName: i.medicineName,
-          dosage: i.dosage,
-          frequency: i.frequency as Prescription['items'][number]['frequency'],
-          durationDays: i.durationDays,
-          quantity: i.quantity,
-          instructions: i.instructions,
-          inCatalog: i.medicineId !== null,
-        })),
-      generalInstructions: p.generalInstructions,
-      validDays: p.validDays,
-      validUntil: p.validUntil,
-      issuedAt: p.issuedAt?.toISOString() ?? null,
-      voidedAt: p.voidedAt?.toISOString() ?? null,
-      voidReason: p.voidReason,
-      supersedesId: p.supersedesId,
-      createdAt: p.createdAt.toISOString(),
-    }));
+    return rows.map(
+      ({ p, doctorName, doctorQualification, doctorRegistration, patientName, patientDob }) => ({
+        id: p.id,
+        consultationId: p.consultationId,
+        status: p.status,
+        doctor: {
+          id: p.doctorId,
+          name: doctorName,
+          qualification: doctorQualification,
+          registrationNumber: doctorRegistration,
+        },
+        patient: { id: p.patientId, name: patientName, age: patientDob ? ageOn(patientDob, now()) : null },
+        items: items
+          .filter((i) => i.prescriptionId === p.id)
+          .map((i) => ({
+            id: i.id,
+            medicineId: i.medicineId,
+            medicineName: i.medicineName,
+            dosage: i.dosage,
+            frequency: i.frequency as Prescription['items'][number]['frequency'],
+            durationDays: i.durationDays,
+            quantity: i.quantity,
+            instructions: i.instructions,
+            inCatalog: i.medicineId !== null,
+          })),
+        generalInstructions: p.generalInstructions,
+        validDays: p.validDays,
+        validUntil: p.validUntil,
+        issuedAt: p.issuedAt?.toISOString() ?? null,
+        voidedAt: p.voidedAt?.toISOString() ?? null,
+        voidReason: p.voidReason,
+        supersedesId: p.supersedesId,
+        createdAt: p.createdAt.toISOString(),
+      }),
+    );
   }
 
   return {

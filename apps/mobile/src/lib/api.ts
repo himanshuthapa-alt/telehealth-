@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { createApiClient } from './api-client';
 import { resolveApiBaseUrl } from './config';
@@ -9,12 +10,22 @@ import { createSession, type TokenStorage } from './session';
 const baseUrl = () => resolveApiBaseUrl();
 
 // Android Keystore / iOS Keychain, never plain AsyncStorage (blueprint §16).
-const secureStorage: TokenStorage = {
+const nativeStorage: TokenStorage = {
   get: (key) => SecureStore.getItemAsync(key),
   set: (key, value) =>
     SecureStore.setItemAsync(key, value, { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY }),
   remove: (key) => SecureStore.deleteItemAsync(key),
 };
+
+// Browsers have no keystore. sessionStorage ends with the tab, so a token never outlives it.
+// ponytail: web is for staff dashboards and testing; use httpOnly cookies if patients ever use web
+const webStorage: TokenStorage = {
+  get: async (key) => globalThis.sessionStorage?.getItem(key) ?? null,
+  set: async (key, value) => globalThis.sessionStorage?.setItem(key, value),
+  remove: async (key) => globalThis.sessionStorage?.removeItem(key),
+};
+
+const secureStorage = Platform.OS === 'web' ? webStorage : nativeStorage;
 
 /** The app-wide login session. */
 export const session = createSession(createApiClient({ baseUrl }), secureStorage);

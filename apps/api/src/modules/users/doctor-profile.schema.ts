@@ -34,6 +34,8 @@ export const doctorProfiles = pgTable(
     photoUrl: text(),
     /** Medical council registration. Private: never returned by the API. */
     registrationNumber: text(),
+    /** Degrees as printed on a prescription, e.g. "MBBS, MD (Paediatrics)". */
+    qualification: text(),
     isDemo: boolean().notNull().default(false),
     isActive: boolean().notNull().default(true),
     /**
