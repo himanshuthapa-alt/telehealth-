@@ -55,6 +55,8 @@ export interface MedicineSummary {
   pricePaise: number;
   inStock: boolean;
   requiresPrescription: boolean;
+  /** Exact units on hand. Pharmacy staff only; patients and doctors only see `inStock`. */
+  stockQty?: number;
 }
 
 export interface PrescriptionItemInput {

@@ -32,6 +32,16 @@ export function useCatalogMedicines(q?: string) {
   });
 }
 
+/** Pharmacy stock correction: +/- units. The list refreshes with the server's new count. */
+export function useAdjustStock() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, delta }: { id: string; delta: number }) =>
+      api.post<MedicineSummary>(`/v1/medicines/${encodeURIComponent(id)}/stock`, { delta }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['medicines'] }),
+  });
+}
+
 export function useCreateOrder() {
   const qc = useQueryClient();
   return useMutation({

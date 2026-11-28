@@ -41,7 +41,6 @@ function PublicProfileForm({ initial }: { initial: DoctorFieldsDraft }) {
       <AppText variant="heading">Public profile</AppText>
       <AppText color="textMuted">Patients see this when choosing a doctor.</AppText>
       {message && <Banner tone="danger" message={message} />}
-      {saved && <Banner tone="success" message="Saved." />}
       <DoctorFieldsForm
         value={draft}
         onChange={(d) => {
@@ -51,6 +50,8 @@ function PublicProfileForm({ initial }: { initial: DoctorFieldsDraft }) {
         error={(f) => local[f] ?? fields[f]}
       />
       <Button label="Save profile" icon={ICONS.check} loading={busy} onPress={() => void submit()} />
+      {/* Next to the button, so it's seen where the doctor is looking. */}
+      {saved && <Banner tone="success" message="Saved." />}
     </Card>
   );
 }

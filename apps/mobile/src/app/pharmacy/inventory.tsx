@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { useCatalogMedicines } from '@/features/orders/order-queries';
+import type { MedicineSummary } from '@telecare/shared';
+import { useAdjustStock, useCatalogMedicines } from '@/features/orders/order-queries';
+import { errorMessage } from '@/lib/errors';
 import { ICONS } from '@/features/shell/icons';
 import {
   AppText,
+  Banner,
   Card,
+  Chip,
   EmptyState,
   Icon,
   QueryState,
@@ -72,7 +76,11 @@ export default function PharmacyInventory() {
                         color={m.inStock ? 'success' : 'danger'}
                         style={{ fontWeight: '800' }}
                       >
-                        {m.inStock ? 'In Stock' : 'Out of Stock'}
+                        {m.stockQty !== undefined
+                          ? `${m.stockQty} in stock`
+                          : m.inStock
+                            ? 'In Stock'
+                            : 'Out of Stock'}
                       </AppText>
                     </View>
                   </View>
@@ -86,6 +94,7 @@ export default function PharmacyInventory() {
                     </AppText>
                   </View>
                 )}
+                <StockControls medicine={m} />
               </Card>
             ))}
           </ScrollView>
@@ -95,7 +104,24 @@ export default function PharmacyInventory() {
   );
 }
 
+/** Quick corrections after a count or a delivery (blueprint J9). The server refuses going below zero. */
+function StockControls({ medicine }: { medicine: MedicineSummary }) {
+  const adjust = useAdjustStock();
+  const change = (delta: number) => adjust.mutate({ id: medicine.id, delta });
+  return (
+    <>
+      <View style={styles.stockRow} accessibilityLabel={`Adjust stock of ${medicine.name}`}>
+        <Chip label="−1" onPress={() => change(-1)} />
+        <Chip label="+1" onPress={() => change(1)} />
+        <Chip label="+10" onPress={() => change(10)} />
+      </View>
+      {adjust.isError && <Banner tone="danger" message={errorMessage(adjust.error)} />}
+    </>
+  );
+}
+
 const styles = StyleSheet.create({
+  stockRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
   header: {
     paddingBottom: spacing.sm,
   },

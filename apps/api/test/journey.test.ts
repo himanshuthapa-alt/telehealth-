@@ -7,6 +7,7 @@ import type {
   DoctorCard,
   DoctorStats,
   JoinResponse,
+  MedicineSummary,
   NotificationList,
   Order,
   Page,
@@ -221,6 +222,18 @@ describe('the full demo journey', () => {
       expect((await api('POST', `/v1/orders/${order.body.id}/status`, pharmacy, { status })).status).toBe(
         200,
       );
+    // Stock: the order took 10 of 50; only the pharmacy sees exact counts and can correct them.
+    const stockOf = async (token: string) =>
+      (await api<MedicineSummary[]>('GET', `/v1/medicines?q=${TAG}`, token)).body[0]!;
+    expect((await stockOf(pharmacy)).stockQty).toBe(40);
+    expect(await stockOf(patient.accessToken)).not.toHaveProperty('stockQty');
+    const adjust = (token: string, delta: number) =>
+      api<MedicineSummary>('POST', `/v1/medicines/${medicineId}/stock`, token, { delta });
+    expect((await adjust(pharmacy, -41)).status).toBe(409); // never below zero
+    expect((await adjust(pharmacy, 5)).body.stockQty).toBe(45);
+    expect((await adjust(patient.accessToken, 5)).status).toBe(403);
+    expect((await adjust(pharmacy, 0)).status).toBe(400);
+
     const tracked = await api<Order>('GET', `/v1/orders/track/${order.body.trackingId}`, patient.accessToken);
     expect(tracked.body.status).toBe('DELIVERED');
     // Tracking holds the address and medicines: never public, never another patient's.

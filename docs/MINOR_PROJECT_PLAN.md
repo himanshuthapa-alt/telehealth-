@@ -217,18 +217,20 @@ Environment: local API + Postgres (Docker), Expo web build in Chrome, Android em
 
 ## 7. Bug log
 
-| ID     | Severity           | Found in          | Description                                                                                            | Status                                                                          |
-| ------ | ------------------ | ----------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| BUG-01 | Medium             | E2E-11            | Days without hours were labelled "Full" (sounds booked out)                                            | Fixed: "No times"                                                               |
-| BUG-02 | Medium             | E2E-12            | Review screen promised cancelling "up to 2 h before" for a slot < 2 h away                             | Fixed: says it can't be cancelled                                               |
-| BUG-03 | Low                | E2E-03            | "Verify doctors" title shown twice (tab header + screen title)                                         | Fixed                                                                           |
-| BUG-04 | Low                | E2E-01            | Icons don't render on the web build (`expo-symbols` is native-only)                                    | Fixed: `Icon.web.tsx` uses the Material Symbols web font                        |
-| BUG-05 | High               | review            | Unverified doctor could call doctor APIs directly (only the app hid them)                              | Fixed: server guard + tests                                                     |
-| BUG-06 | Medium             | E2E-01            | Web build couldn't log in (no secure storage on web) or reach the API (no CORS)                        | Fixed                                                                           |
-| BUG-07 | Low                | check             | Doctor Today test mock didn't answer the new stats request                                             | Fixed                                                                           |
-| BUG-08 | **Critical**       | `journey.test.ts` | `POST /v1/orders` crashed with 500 for everyone: the route used the role guard without the login guard | Fixed at the root: the role guard now authenticates itself; regression asserted |
-| BUG-09 | **High** (privacy) | review            | `GET /v1/orders/track/:id` was public and returned name, phone, address and medicines                  | Fixed: login required, patients only see their own (404 otherwise)              |
-| BUG-10 | Medium             | route audit       | Public `/v1/speech` (CPU-heavy TTS) had no rate limit and no upstream timeout                          | Fixed: 60 req / 15 min per IP, 90 s timeout                                     |
+| ID     | Severity           | Found in          | Description                                                                                            | Status                                                                                   |
+| ------ | ------------------ | ----------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| BUG-01 | Medium             | E2E-11            | Days without hours were labelled "Full" (sounds booked out)                                            | Fixed: "No times"                                                                        |
+| BUG-02 | Medium             | E2E-12            | Review screen promised cancelling "up to 2 h before" for a slot < 2 h away                             | Fixed: says it can't be cancelled                                                        |
+| BUG-03 | Low                | E2E-03            | "Verify doctors" title shown twice (tab header + screen title)                                         | Fixed                                                                                    |
+| BUG-04 | Low                | E2E-01            | Icons don't render on the web build (`expo-symbols` is native-only)                                    | Fixed: `Icon.web.tsx` uses the Material Symbols web font                                 |
+| BUG-05 | High               | review            | Unverified doctor could call doctor APIs directly (only the app hid them)                              | Fixed: server guard + tests                                                              |
+| BUG-06 | Medium             | E2E-01            | Web build couldn't log in (no secure storage on web) or reach the API (no CORS)                        | Fixed                                                                                    |
+| BUG-07 | Low                | check             | Doctor Today test mock didn't answer the new stats request                                             | Fixed                                                                                    |
+| BUG-08 | **Critical**       | `journey.test.ts` | `POST /v1/orders` crashed with 500 for everyone: the route used the role guard without the login guard | Fixed at the root: the role guard now authenticates itself; regression asserted          |
+| BUG-09 | **High** (privacy) | review            | `GET /v1/orders/track/:id` was public and returned name, phone, address and medicines                  | Fixed: login required, patients only see their own (404 otherwise)                       |
+| BUG-10 | Medium             | route audit       | Public `/v1/speech` (CPU-heavy TTS) had no rate limit and no upstream timeout                          | Fixed: 60 req / 15 min per IP, 90 s timeout                                              |
+| BUG-11 | Medium             | E2E (pharmacy)    | Blueprint J9 missing: pharmacy could not see exact stock or adjust it                                  | Fixed: exact counts for staff only, −1/+1/+10 adjust, never below zero, logged as ADJUST |
+| BUG-12 | Low                | E2E-06            | Doctor profile "Saved." message appeared off-screen at the top of the form                             | Fixed: shown beside the button                                                           |
 
 ---
 
