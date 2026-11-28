@@ -19,7 +19,15 @@ export function WebCall({ video, onFailed }: { video: VideoAccess; name: string;
     if (video.provider !== 'p2p') return;
     fetch(callPageUrl())
       .then((r) => (r.ok ? r.text() : Promise.reject(new Error(String(r.status)))))
-      .then(setHtml)
+      // Hand the page its token in memory (never in a URL). '<' is escaped so the token can't end the script.
+      .then((page) =>
+        setHtml(
+          page.replace(
+            '<head>',
+            `<head><script>window.__CALL_TOKEN__=${JSON.stringify(video.token).replace(/</g, '\\u003c')}</script>`,
+          ),
+        ),
+      )
       .catch(onFailed);
   }, [video, onFailed]);
 
@@ -48,8 +56,6 @@ export function WebCall({ video, onFailed }: { video: VideoAccess; name: string;
       <WebView
         source={html !== null ? { html, baseUrl: 'http://localhost' } : { uri: callUrl(video) }}
         style={styles.web}
-        // Hand the token to the page in memory, not in a URL.
-        injectedJavaScriptBeforeContentLoaded={`window.__CALL_TOKEN__=${JSON.stringify(video.token)};true;`}
         mediaPlaybackRequiresUserAction={false}
         allowsInlineMediaPlayback
         mediaCapturePermissionGrantType="grant"
