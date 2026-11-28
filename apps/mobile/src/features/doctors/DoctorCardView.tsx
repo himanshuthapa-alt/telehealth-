@@ -31,7 +31,16 @@ export const plainSpecialties = (d: Pick<DoctorCard, 'specializations'>) =>
   d.specializations.map((s) => SPECIALTY[s].plain).join(', ');
 
 /** One doctor in the search results. The whole card is one button for screen readers. */
-export function DoctorCardView({ doctor, onPress }: { doctor: DoctorCard; onPress: () => void }) {
+export function DoctorCardView({
+  doctor,
+  onPress,
+  showAction = true,
+}: {
+  doctor: DoctorCard;
+  onPress: () => void;
+  /** The "Book consult" button; off where something else books (the receptionist). */
+  showAction?: boolean;
+}) {
   const summary = [
     doctor.name,
     plainSpecialties(doctor),
@@ -83,12 +92,14 @@ export function DoctorCardView({ doctor, onPress }: { doctor: DoctorCard; onPres
           </AppText>
           <AppText variant="heading">{formatFee(doctor.feeInr)}</AppText>
         </View>
-        <View style={styles.cta} importantForAccessibility="no-hide-descendants">
-          <Icon name={ICONS.video} size={20} color="onPrimary" />
-          <AppText variant="small" color="onPrimary" style={{ fontWeight: '700' }}>
-            Book consult
-          </AppText>
-        </View>
+        {showAction && (
+          <View style={styles.cta} importantForAccessibility="no-hide-descendants">
+            <Icon name={ICONS.video} size={20} color="onPrimary" />
+            <AppText variant="small" color="onPrimary" style={{ fontWeight: '700' }}>
+              Book consult
+            </AppText>
+          </View>
+        )}
       </View>
     </Pressable>
   );

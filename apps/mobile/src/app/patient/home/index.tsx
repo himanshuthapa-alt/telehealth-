@@ -10,7 +10,7 @@ import { useAppointments } from '@/features/appointments/appointment-queries';
 import { openRoom } from '@/features/consultation/JoinButton';
 import { SPECIALTY } from '@/features/doctors/specialties';
 import { ICONS } from '@/features/shell/icons';
-import { VoiceAssistantModal } from '@/features/voice/VoiceAssistantModal';
+import { ReceptionistModal } from '@/features/voice/ReceptionistModal';
 import { useSession } from '@/lib/api';
 import { useNow } from '@/lib/use-now';
 import {
@@ -68,7 +68,12 @@ export default function Home() {
       body: 'Upcoming & past',
       onPress: () => router.navigate('/patient/appointments'),
     },
-    { icon: ICONS.mic, title: 'बोलो · Speak', body: 'In your language', onPress: () => setBoloVisible(true) },
+    {
+      icon: ICONS.mic,
+      title: 'बोलो · Talk to us',
+      body: 'Receptionist finds your doctor',
+      onPress: () => setBoloVisible(true),
+    },
   ];
 
   return (
@@ -222,7 +227,7 @@ export default function Home() {
           )}
         </View>
       </ScrollView>
-      <VoiceAssistantModal visible={boloVisible} onClose={() => setBoloVisible(false)} />
+      <ReceptionistModal visible={boloVisible} onClose={() => setBoloVisible(false)} />
     </SafeAreaView>
   );
 }
