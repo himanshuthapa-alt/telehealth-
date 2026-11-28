@@ -261,9 +261,12 @@ export function createOrderService({
       return updated;
     },
 
-    async trackOrder(trackingId: string): Promise<Order> {
+    /** Patients can track only their own orders; pharmacy staff any. Others get 404 (no existence leak). */
+    async trackOrder(actor: OrderServiceActor, trackingId: string): Promise<Order> {
       const order = await repo.findByTrackingId(trackingId);
-      if (!order) {
+      const allowed =
+        actor.role === 'PHARMACY_ADMIN' || (actor.role === 'PATIENT' && order?.patientId === actor.id);
+      if (!order || !allowed) {
         throw new AppError(404, 'NOT_FOUND', 'Order with tracking ID not found');
       }
       return order;

@@ -43,7 +43,7 @@ Legend: ✅ done and tested · 🟡 works with a known gap · ⬜ not built
 | R15 | Voice navigation (Bolo) EN/HI/Hinglish                                         | ✅     | `voice.test.ts`, `intents.test.ts`                                        |
 | R16 | Notification inbox ("prescription ready", order updates) (Ph. 9)               | ⬜     | P1-1 below                                                                |
 | R17 | Hosted API + DB, installable APK (Ph. 11)                                      | ⬜     | P0-3, P0-4 below                                                          |
-| R18 | Web build for admin / pharmacy / testing (T5)                                  | 🟡     | Runs in Chrome; icons don't render on web (BUG-04)                        |
+| R18 | Web build for admin / pharmacy / testing (T5)                                  | ✅     | Runs in Chrome, icons included (BUG-04 fixed)                             |
 | R19 | Security: RBAC, ownership 404s, audit log, no secrets in client                | ✅     | `auth.test.ts`, ownership tests in every module, `SECURITY.md`            |
 
 ---
@@ -54,14 +54,14 @@ Each item has an acceptance test. **P0 = needed for the demo. P1 = should do. P2
 
 ### P0 — must have
 
-| ID   | Work                                                                                                  | Acceptance                                                                                       | Est.    | Owner (suggested) |
-| ---- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------- | ----------------- |
-| P0-1 | Prescription shows doctor name, qualification and registration number                                 | Card + detail screen show them; API test asserts fields; patient never sees other private data   | 2 h     | Backend + Mobile  |
-| P0-2 | 100ms live test: create account, set `VIDEO_PROVIDER=hms`, call between two Android phones            | Both see/hear each other; mute/camera work; ending closes the room; deny camera → chat continues | 3 h     | Third member      |
-| P0-3 | Host the API: Neon Postgres + Render/Railway; `JWT_SECRET` new; `CORS_ORIGINS`; migrations; seed once | `/health` = ok on the public URL; login works from the APK on mobile data                        | 3 h     | Backend           |
-| P0-4 | Release APK pointed at the hosted API (`EXPO_PUBLIC_API_URL`), signed                                 | Installs on a phone that has never seen Metro; full journey works                                | 2 h     | Mobile            |
-| P0-5 | Demo reset script: wipes demo bookings/orders, keeps accounts; warm-up call before the viva           | One command restores the demo state in < 1 min                                                   | 1 h     | Backend           |
-| P0-6 | Fix every open bug in §7 with severity High/Medium                                                    | §7 shows them Fixed with a test or E2E reference                                                 | ongoing | All               |
+| ID   | Work                                                                                                                                       | Acceptance                                                                                       | Est.    | Owner (suggested) |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ | ------- | ----------------- |
+| P0-1 | ✅ Done. Prescription shows doctor name, qualification and registration number                                                             | Card + detail screen show them; API test asserts fields; patient never sees other private data   | 2 h     | Backend + Mobile  |
+| P0-2 | 100ms live test: create account, set `VIDEO_PROVIDER=hms`, call between two Android phones                                                 | Both see/hear each other; mute/camera work; ending closes the room; deny camera → chat continues | 3 h     | Third member      |
+| P0-3 | Host the API: Neon Postgres + Render/Railway; `JWT_SECRET` new; `CORS_ORIGINS`; migrations; seed once                                      | `/health` = ok on the public URL; login works from the APK on mobile data                        | 3 h     | Backend           |
+| P0-4 | Release APK pointed at the hosted API (`EXPO_PUBLIC_API_URL`), signed                                                                      | Installs on a phone that has never seen Metro; full journey works                                | 2 h     | Mobile            |
+| P0-5 | ✅ Done: `npm run db:demo-reset -- --confirm`. Demo reset script: wipes demo bookings/orders, keeps accounts; warm-up call before the viva | One command restores the demo state in < 1 min                                                   | 1 h     | Backend           |
+| P0-6 | Fix every open bug in §7 with severity High/Medium                                                                                         | §7 shows them Fixed with a test or E2E reference                                                 | ongoing | All               |
 
 ### P1 — should have
 
@@ -70,7 +70,7 @@ Each item has an acceptance test. **P0 = needed for the demo. P1 = should do. P2
 | P1-1 | Notification inbox (Phase 9): prescription issued, order status changed, booking cancelled | Bell on Home with unread count; tapping opens the right screen; API tests |
 | P1-2 | Low-network pass (Phase 10): Android emulator 3G profile + airplane-mode toggles           | No screen hangs; every write shows retry; chat outbox survives reconnect  |
 | P1-3 | Accessibility pass: TalkBack walk of the main journey, 1.3× font, 48 dp targets            | Checklist in TESTING.md ticked                                            |
-| P1-4 | Web icons (BUG-04): a web fallback for `expo-symbols` (Material icons font)                | Icons visible in Chrome                                                   |
+| P1-4 | ✅ Done. Web icons (BUG-04): a web fallback for `expo-symbols` (Material icons font)       | Icons visible in Chrome                                                   |
 | P1-5 | Doctor "Prescriptions issued" list screen                                                  | Lists the doctor's prescriptions, opens detail                            |
 
 ### P2 — nice to have (do not start before P0/P1 are done)
@@ -217,15 +217,17 @@ Environment: local API + Postgres (Docker), Expo web build in Chrome, Android em
 
 ## 7. Bug log
 
-| ID     | Severity | Found in | Description                                                                     | Status                            |
-| ------ | -------- | -------- | ------------------------------------------------------------------------------- | --------------------------------- |
-| BUG-01 | Medium   | E2E-11   | Days without hours were labelled "Full" (sounds booked out)                     | Fixed: "No times"                 |
-| BUG-02 | Medium   | E2E-12   | Review screen promised cancelling "up to 2 h before" for a slot < 2 h away      | Fixed: says it can't be cancelled |
-| BUG-03 | Low      | E2E-03   | "Verify doctors" title shown twice (tab header + screen title)                  | Fixed                             |
-| BUG-04 | Low      | E2E-01   | Icons don't render on the web build (`expo-symbols` is native-only)             | Open → P1-4                       |
-| BUG-05 | High     | review   | Unverified doctor could call doctor APIs directly (only the app hid them)       | Fixed: server guard + tests       |
-| BUG-06 | Medium   | E2E-01   | Web build couldn't log in (no secure storage on web) or reach the API (no CORS) | Fixed                             |
-| BUG-07 | Low      | check    | Doctor Today test mock didn't answer the new stats request                      | Fixed                             |
+| ID     | Severity           | Found in          | Description                                                                                            | Status                                                                          |
+| ------ | ------------------ | ----------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| BUG-01 | Medium             | E2E-11            | Days without hours were labelled "Full" (sounds booked out)                                            | Fixed: "No times"                                                               |
+| BUG-02 | Medium             | E2E-12            | Review screen promised cancelling "up to 2 h before" for a slot < 2 h away                             | Fixed: says it can't be cancelled                                               |
+| BUG-03 | Low                | E2E-03            | "Verify doctors" title shown twice (tab header + screen title)                                         | Fixed                                                                           |
+| BUG-04 | Low                | E2E-01            | Icons don't render on the web build (`expo-symbols` is native-only)                                    | Fixed: `Icon.web.tsx` uses the Material Symbols web font                        |
+| BUG-05 | High               | review            | Unverified doctor could call doctor APIs directly (only the app hid them)                              | Fixed: server guard + tests                                                     |
+| BUG-06 | Medium             | E2E-01            | Web build couldn't log in (no secure storage on web) or reach the API (no CORS)                        | Fixed                                                                           |
+| BUG-07 | Low                | check             | Doctor Today test mock didn't answer the new stats request                                             | Fixed                                                                           |
+| BUG-08 | **Critical**       | `journey.test.ts` | `POST /v1/orders` crashed with 500 for everyone: the route used the role guard without the login guard | Fixed at the root: the role guard now authenticates itself; regression asserted |
+| BUG-09 | **High** (privacy) | review            | `GET /v1/orders/track/:id` was public and returned name, phone, address and medicines                  | Fixed: login required, patients only see their own (404 otherwise)              |
 
 ---
 

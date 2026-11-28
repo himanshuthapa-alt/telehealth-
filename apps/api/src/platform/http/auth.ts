@@ -1,4 +1,4 @@
-import type { RequestHandler, Response } from 'express';
+import type { Request, RequestHandler, Response } from 'express';
 import { SignJWT, jwtVerify } from 'jose';
 import { ROLES, type Role } from '@telecare/shared';
 import type { AuditLog } from '../../modules/audit/audit';
@@ -51,13 +51,19 @@ export function createAuthGuards(
   audit: AuditLog,
   doctorBlocked: (doctorId: string) => Promise<boolean> = async () => false,
 ) {
-  const requireAuth: RequestHandler = async (req, res, next) => {
+  /** Sets res.locals.actor from the Bearer token; false if missing or invalid. */
+  async function authenticate(req: Request, res: Response): Promise<boolean> {
+    if (res.locals.actor) return true;
     const header = req.get('authorization') ?? '';
     const actor = header.startsWith('Bearer ') ? await tokens.verify(header.slice(7)) : null;
-    if (!actor) return next(new AppError(401, 'UNAUTHENTICATED', 'Log in to continue'));
-    res.locals.actor = actor;
-    next();
-  };
+    if (actor) res.locals.actor = actor;
+    return !!actor;
+  }
+
+  const requireAuth: RequestHandler = async (req, res, next) =>
+    (await authenticate(req, res))
+      ? next()
+      : next(new AppError(401, 'UNAUTHENTICATED', 'Log in to continue'));
 
   /**
    * Use after `requireAuth`. Denied attempts are written to the audit log.
@@ -66,6 +72,9 @@ export function createAuthGuards(
   const requireRole =
     (...roles: Role[]): RequestHandler =>
     async (req, res, next) => {
+      // Authenticates too, so a route that lists only requireRole can never run unauthenticated.
+      if (!(await authenticate(req, res)))
+        return next(new AppError(401, 'UNAUTHENTICATED', 'Log in to continue'));
       const actor = getActor(res);
       if (roles.includes(actor.role)) {
         if (actor.role !== 'DOCTOR' || !(await doctorBlocked(actor.id))) return next();

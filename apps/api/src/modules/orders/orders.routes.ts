@@ -46,10 +46,12 @@ export function orderRoutes(service: OrderService, guards: AuthGuards): Router {
   const router = Router();
 
   /** GET /v1/orders/track/:trackingId: lookup order status by tracking ID (TC-XXXX-XXXX).
+   * Logged-in only: an order holds the patient's address and medicines.
    * MUST be registered before /:id or Express will match "track" as an id. */
-  router.get('/v1/orders/track/:trackingId', async (req, res) => {
-    const trackingId = z.string().min(1).parse(req.params.trackingId);
-    const order = await service.trackOrder(trackingId);
+  router.get('/v1/orders/track/:trackingId', guards.requireAuth, async (req, res) => {
+    const actor = getActor(res);
+    const trackingId = z.string().min(1).max(20).parse(req.params.trackingId);
+    const order = await service.trackOrder({ id: actor.id, role: actor.role }, trackingId);
     res.json(order);
   });
 

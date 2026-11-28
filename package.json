@@ -23,7 +23,8 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run test",
-    "db:seed": "npm run db:seed -w @telecare/api"
+    "db:seed": "npm run db:seed -w @telecare/api",
+    "db:demo-reset": "npm run db:demo-reset -w @telecare/api --"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
