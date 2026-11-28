@@ -30,7 +30,7 @@ export function Tile({ icon, label, sublabel, selected = false, onPress }: TileP
       ]}
     >
       <View style={[styles.iconWrap, selected && { backgroundColor: colors.surface }]}>
-        <Icon name={icon} size={30} color="primary" />
+        <Icon name={icon} size={28} color="primary" />
       </View>
       <AppText variant="label" style={styles.center}>
         {label}
@@ -57,20 +57,20 @@ const styles = StyleSheet.create({
     minHeight: minTouchTarget * 2,
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
-    borderWidth: 2,
-    borderColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xs,
   },
-  selected: { backgroundColor: colors.accent, borderColor: colors.accent },
+  selected: { backgroundColor: colors.accent, borderColor: colors.primary },
   pressed: { borderColor: colors.primary },
   iconWrap: {
     width: 52,
     height: 52,
     borderRadius: radius.pill,
-    backgroundColor: colors.background,
+    backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
   },

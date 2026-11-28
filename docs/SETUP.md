@@ -53,7 +53,25 @@ If video can't start (no permission, network), the consultation continues in the
 
 ## Voice (speech navigation)
 
-Voice navigation lets a non-technical user drive the patient app by speaking (English/Hindi/Hinglish).
+Voice navigation lets a non-technical user drive the patient app by speaking.
+
+### Indian languages (Sarvam AI) — recommended
+
+With a Sarvam key the mic understands **23 Indian languages** (Hindi, Tamil, Telugu, Bengali,
+Marathi, Gujarati, Kannada, Malayalam, Punjabi, Odia, Urdu, Assamese, …) and answers out loud in
+the speaker's language (11 voice languages).
+
+1. Sign up at **dashboard.sarvam.ai** (₹100 free credits, no card) → API keys → create a key.
+2. Put it in `apps/api/.env`: `SARVAM_API_KEY=...` (never in the app; the app only talks to our API).
+3. Restart the API. `GET /v1/voice/capabilities` now returns `{"indianLanguages": true}`.
+
+How it works: the app records ≤8 s → `POST /v1/voice/understand` (signed-in users only, 40 per
+15 min) → Sarvam translates the speech to English → the same keyword parser picks the intent
+(emergency words always win) → the app navigates → the reply is translated and spoken via
+`GET /v1/speech?lang=ta-IN`. Audio and transcripts are never stored or logged.
+Cost: roughly ₹0.5 per command; ₹100 lasts a whole project demo comfortably.
+
+### Without a key (English, on device)
 
 - **Speech-to-text needs a native dev build.** On-device recognition uses `expo-speech-recognition`, which Expo Go cannot load. Build and install the dev client once:
 

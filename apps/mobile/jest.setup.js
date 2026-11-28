@@ -7,6 +7,14 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 jest.mock('expo-audio', () => ({
   createAudioPlayer: () => ({ play: jest.fn(), remove: jest.fn() }),
   setAudioModeAsync: jest.fn(() => Promise.resolve()),
+  RecordingPresets: { HIGH_QUALITY: {} },
+  requestRecordingPermissionsAsync: jest.fn(() => Promise.resolve({ granted: true })),
+  useAudioRecorder: () => ({
+    prepareToRecordAsync: jest.fn(() => Promise.resolve()),
+    record: jest.fn(),
+    stop: jest.fn(() => Promise.resolve()),
+    uri: 'file:///clip.m4a',
+  }),
 }));
 
 jest.mock('expo-speech-recognition', () => ({

@@ -24,27 +24,27 @@ The project is ready to show when **all of these are true**:
 
 Legend: ✅ done and tested · 🟡 works with a known gap · ⬜ not built
 
-| #   | Requirement (blueprint §)                                                      | Status | Evidence                                                                  |
-| --- | ------------------------------------------------------------------------------ | ------ | ------------------------------------------------------------------------- |
-| R1  | Phone + password auth, 4 roles, refresh rotation, reset (§12, §16)             | ✅     | `apps/api/test/auth.test.ts`, mobile `session.test.ts`                    |
-| R2  | Patient shell: 5 tabs, empty/offline/error states (§4, §18)                    | ✅     | `patient-tabs.test.tsx`, `QueryState.test.tsx`                            |
-| R3  | Doctor discovery: search, filters, sorts, paging, offline cache                | ✅     | `discovery.test.ts`, `doctors.test.tsx`                                   |
-| R4  | **Doctor self-registration + admin verification** (new)                        | ✅     | `doctor-verification.test.ts`; manual E2E-02..05                          |
-| R5  | Real doctors listed above demo doctors; unverified never bookable              | ✅     | `doctor-verification.test.ts`; E2E-08                                     |
-| R6  | Doctor dashboard: stats, editable public profile, approval screen              | ✅     | `booking.test.tsx` (stats), E2E-04/06                                     |
-| R7  | Weekly hours, days off, IST slots, lead time, horizon (§11)                    | ✅     | `appointments.test.ts`, `slots.test.ts`, E2E-07                           |
-| R8  | Booking: idempotent, conflict-safe, cancel cutoff (§11, J2)                    | ✅     | 10-way concurrency test, idempotent replay test                           |
-| R9  | Consultation lifecycle, waiting room, presence, rejoin (§13)                   | ✅     | `consultations.test.ts`, `room.test.tsx`                                  |
-| R10 | **Real video (100ms)** with chat fallback (§13.2, J4)                          | 🟡     | Adapter + call screen built and unit-tested; needs 100ms keys + 2 devices |
-| R11 | Structured, immutable prescription posted into chat (D8)                       | ✅     | `prescriptions.test.ts` (immutability via API and DB)                     |
-| R12 | Prescription shows doctor's registration number (Telemedicine Guidelines 2020) | ✅     | P0-1 below                                                                |
-| R13 | Order from prescription, stock reservation, COD, tracking ID (D9)              | ✅     | `orders.test.ts`, `fulfillment.test.ts`                                   |
-| R14 | Pharmacy queue + inventory, status timeline (D10)                              | ✅     | `orders.test.ts`                                                          |
-| R15 | Voice navigation (Bolo) EN/HI/Hinglish                                         | ✅     | `voice.test.ts`, `intents.test.ts`                                        |
-| R16 | Notification inbox ("prescription ready", order updates) (Ph. 9)               | ✅     | `journey.test.ts` (inbox per step), `inbox.test.tsx`                      |
-| R17 | Hosted API + DB, installable APK (Ph. 11)                                      | ⬜     | P0-3, P0-4 below                                                          |
-| R18 | Web build for admin / pharmacy / testing (T5)                                  | ✅     | Runs in Chrome, icons included (BUG-04 fixed)                             |
-| R19 | Security: RBAC, ownership 404s, audit log, no secrets in client                | ✅     | `auth.test.ts`, ownership tests in every module, `SECURITY.md`            |
+| #   | Requirement (blueprint §)                                                        | Status | Evidence                                                                  |
+| --- | -------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------- |
+| R1  | Phone + password auth, 4 roles, refresh rotation, reset (§12, §16)               | ✅     | `apps/api/test/auth.test.ts`, mobile `session.test.ts`                    |
+| R2  | Patient shell: 5 tabs, empty/offline/error states (§4, §18)                      | ✅     | `patient-tabs.test.tsx`, `QueryState.test.tsx`                            |
+| R3  | Doctor discovery: search, filters, sorts, paging, offline cache                  | ✅     | `discovery.test.ts`, `doctors.test.tsx`                                   |
+| R4  | **Doctor self-registration + admin verification** (new)                          | ✅     | `doctor-verification.test.ts`; manual E2E-02..05                          |
+| R5  | Real doctors listed above demo doctors; unverified never bookable                | ✅     | `doctor-verification.test.ts`; E2E-08                                     |
+| R6  | Doctor dashboard: stats, editable public profile, approval screen                | ✅     | `booking.test.tsx` (stats), E2E-04/06                                     |
+| R7  | Weekly hours, days off, IST slots, lead time, horizon (§11)                      | ✅     | `appointments.test.ts`, `slots.test.ts`, E2E-07                           |
+| R8  | Booking: idempotent, conflict-safe, cancel cutoff (§11, J2)                      | ✅     | 10-way concurrency test, idempotent replay test                           |
+| R9  | Consultation lifecycle, waiting room, presence, rejoin (§13)                     | ✅     | `consultations.test.ts`, `room.test.tsx`                                  |
+| R10 | **Real video (100ms)** with chat fallback (§13.2, J4)                            | 🟡     | Adapter + call screen built and unit-tested; needs 100ms keys + 2 devices |
+| R11 | Structured, immutable prescription posted into chat (D8)                         | ✅     | `prescriptions.test.ts` (immutability via API and DB)                     |
+| R12 | Prescription shows doctor's registration number (Telemedicine Guidelines 2020)   | ✅     | P0-1 below                                                                |
+| R13 | Order from prescription, stock reservation, COD, tracking ID (D9)                | ✅     | `orders.test.ts`, `fulfillment.test.ts`                                   |
+| R14 | Pharmacy queue + inventory, status timeline (D10)                                | ✅     | `orders.test.ts`                                                          |
+| R15 | Voice navigation (Bolo) in 23 Indian languages via Sarvam; EN on-device fallback | 🟡     | `voice-sarvam.test.ts`, `voice-overlay.test.tsx`; needs `SARVAM_API_KEY`  |
+| R16 | Notification inbox ("prescription ready", order updates) (Ph. 9)                 | ✅     | `journey.test.ts` (inbox per step), `inbox.test.tsx`                      |
+| R17 | Hosted API + DB, installable APK (Ph. 11)                                        | ⬜     | P0-3, P0-4 below                                                          |
+| R18 | Web build for admin / pharmacy / testing (T5)                                    | ✅     | Runs in Chrome, icons included (BUG-04 fixed)                             |
+| R19 | Security: RBAC, ownership 404s, audit log, no secrets in client                  | ✅     | `auth.test.ts`, ownership tests in every module, `SECURITY.md`            |
 
 ---
 
@@ -281,7 +281,7 @@ Environment: local API + Postgres (Docker), Expo web build in Chrome, Android em
 
 1. (1 min) Problem: rural patients travel hours for a 5-minute consult. One connected journey.
 2. (1 min) Doctor signs up with a registration number → admin verifies on the laptop → doctor appears first in the list.
-3. (2 min) Patient: Home → "Child doctor" → profile → slot → booking token. Show "Bolo" voice: say "doctor dikhao".
+3. (2 min) Patient: Home → "Child doctor" → profile → slot → booking token. Show voice: tap the mic and say a problem in Hindi/Tamil ("bacche ko bukhar hai") → it opens child doctors and answers in that language.
 4. (3 min) Consultation: waiting room presence → doctor starts → **video call** + chat → doctor issues prescription → card appears in chat.
 5. (2 min) Patient orders from the prescription (COD) → pharmacy confirms/packs/ships on the laptop → patient's timeline updates live.
 6. (1 min) Engineering: modular monolith, PostgreSQL constraints prevent double booking (show the concurrency test), immutable prescriptions, audit log, 270+ automated tests.

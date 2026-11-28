@@ -24,8 +24,8 @@ export function Chip({ label, selected = false, onPress, even = false }: ChipPro
         pressed && !selected && styles.pressed,
       ]}
     >
-      {selected && <Icon name={{ android: 'check', ios: 'checkmark' }} size={20} color="onAccent" />}
-      <AppText variant="label" color={selected ? 'onAccent' : 'primary'}>
+      {selected && <Icon name={{ android: 'check', ios: 'checkmark' }} size={18} color="onAccent" />}
+      <AppText variant="small" color={selected ? 'onAccent' : 'text'} style={{ fontWeight: '600' }}>
         {label}
       </AppText>
     </Pressable>
@@ -37,14 +37,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    minHeight: minTouchTarget - 4,
+    minHeight: minTouchTarget - 12,
     paddingHorizontal: spacing.md,
     borderRadius: radius.pill,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
   even: { flexBasis: '30%', flexGrow: 1, justifyContent: 'center' },
-  selected: { backgroundColor: colors.accent, borderColor: colors.accent },
+  selected: { backgroundColor: colors.accent, borderColor: colors.primary },
   pressed: { borderColor: colors.primary },
 });

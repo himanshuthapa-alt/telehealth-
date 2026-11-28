@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
-import { navigateIntent, parseVoiceIntent, sayForIntent } from './intents';
+import { LANGUAGE_NAMES, useCloudVoice, useVoiceCapabilities, type Understood } from './cloud-voice';
+import { navigateIntent, parseVoiceIntent, sayForIntent, type VoiceIntent } from './intents';
 import { speak } from './speech-api';
 import { normalizeSpeechError, speechInput, useSpeechEvent } from './speech-input';
 import { AppText, MicButton, colors, radius, spacing, type MicStatus } from '@/ui';
@@ -31,11 +32,16 @@ export function VoiceNavOverlay() {
   const handled = useRef(false);
   const lastTranscript = useRef('');
 
-  const act = useCallback((transcript: string) => {
+  // With a Sarvam key on the server: record, upload, understood in any Indian language.
+  const cloud = useVoiceCapabilities().data?.indianLanguages === true;
+  const cloudVoice = useCloudVoice();
+  const autoStop = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  const act = useCallback((transcript: string, parsed?: VoiceIntent, lang?: string) => {
     if (handled.current) return;
     handled.current = true;
     setHeard(transcript);
-    const intent = parseVoiceIntent(transcript);
+    const intent = parsed ?? parseVoiceIntent(transcript);
     const say = sayForIntent(intent);
     setReply(say);
 
@@ -47,7 +53,7 @@ export function VoiceNavOverlay() {
     }
 
     setStatus('speaking');
-    void speak(say)
+    void speak(say, lang)
       .catch(() => {})
       .finally(() => setStatus('idle'));
   }, []);
@@ -77,9 +83,49 @@ export function VoiceNavOverlay() {
     setStatus('idle');
   });
 
+  const finishCloud = useCallback(async () => {
+    clearTimeout(autoStop.current);
+    setStatus('thinking');
+    let heard: Understood;
+    try {
+      heard = await cloudVoice.stopAndUnderstand();
+    } catch {
+      setReply("Sorry, I couldn't hear that clearly. Please try again.");
+      setStatus('idle');
+      return;
+    }
+    const language = heard.languageCode ? LANGUAGE_NAMES[heard.languageCode] : undefined;
+    act(
+      language && heard.languageCode !== 'en-IN' ? `${heard.transcript} (${language})` : heard.transcript,
+      heard.intent,
+      heard.languageCode ?? undefined,
+    );
+  }, [act, cloudVoice]);
+
   const startListening = useCallback(async () => {
     if (status === 'listening') {
-      speechInput.stop();
+      if (cloud) void finishCloud();
+      else speechInput.stop();
+      return;
+    }
+    if (status === 'thinking') return;
+    const reset = () => {
+      handled.current = false;
+      lastTranscript.current = '';
+      setHeard('');
+      setReply('');
+      setEmergency(false);
+    };
+    if (cloud) {
+      if (!(await cloudVoice.start().catch(() => false))) {
+        setReply(ERROR_SAY['no-permission']);
+        return;
+      }
+      reset();
+      setReply('Listening… speak in any Indian language, then tap again.');
+      setStatus('listening');
+      // ponytail: fixed 8 s cap (Sarvam's quick API takes ≤30 s); add silence detection if users want it
+      autoStop.current = setTimeout(() => void finishCloud(), 8000);
       return;
     }
     const granted = await speechInput.requestPermission();
@@ -87,14 +133,10 @@ export function VoiceNavOverlay() {
       setReply(ERROR_SAY['no-permission']);
       return;
     }
-    handled.current = false;
-    lastTranscript.current = '';
-    setHeard('');
-    setReply('');
-    setEmergency(false);
+    reset();
     setStatus('listening');
     speechInput.start({ lang: 'en-IN' });
-  }, [status]);
+  }, [status, cloud, cloudVoice, finishCloud]);
 
   const showPanel = heard !== '' || reply !== '';
 

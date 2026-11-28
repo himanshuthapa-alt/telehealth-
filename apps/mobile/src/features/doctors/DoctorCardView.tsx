@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { DoctorCard } from '@telecare/shared';
 import { ICONS } from '@/features/shell/icons';
-import { AppText, Avatar, Icon, colors, radius, spacing, type IconName } from '@/ui';
+import { AppText, Avatar, Icon, colors, radius, shadow, spacing, type IconName } from '@/ui';
 import { formatExperience, formatFee, formatRating } from './format';
 import { SPECIALTY } from './specialties';
 
@@ -19,8 +19,8 @@ export function DemoBadge() {
 export function Fact({ icon, text }: { icon: IconName; text: string }) {
   return (
     <View style={styles.fact}>
-      <Icon name={icon} size={22} color="textMuted" />
-      <AppText color="textMuted" style={{ flex: 1 }}>
+      <Icon name={icon} size={20} color="textMuted" />
+      <AppText variant="small" color="textMuted" style={{ flex: 1 }}>
         {text}
       </AppText>
     </View>
@@ -48,44 +48,84 @@ export function DoctorCardView({ doctor, onPress }: { doctor: DoctorCard; onPres
       accessibilityRole="button"
       accessibilityLabel={summary}
       onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && { backgroundColor: colors.primarySoft }]}
+      style={({ pressed }) => [styles.card, pressed && { backgroundColor: colors.accentSoft }]}
     >
       <View style={styles.top}>
-        <Avatar name={doctor.name} photoUrl={doctor.photoUrl} size={60} />
+        <Avatar name={doctor.name} photoUrl={doctor.photoUrl} size={64} />
         <View style={{ flex: 1, gap: 2 }}>
-          <AppText variant="label">{doctor.name}</AppText>
-          <AppText color="primary" style={{ fontWeight: '600' }}>
+          <View style={styles.nameRow}>
+            <AppText variant="label" style={{ flexShrink: 1 }}>
+              {doctor.name}
+            </AppText>
+            {!doctor.isDemo && <Icon name={ICONS.verified} size={18} color="primary" />}
+          </View>
+          <AppText variant="small" color="primary" style={{ fontWeight: '600' }}>
             {plainSpecialties(doctor)}
           </AppText>
-          {doctor.isDemo && (
-            <View style={{ flexDirection: 'row' }}>
-              <DemoBadge />
+          <AppText variant="small" color="textMuted">
+            {formatExperience(doctor.experienceYears)} experience
+          </AppText>
+          <View style={styles.badges}>
+            <View style={[styles.pill, doctor.ratingAvg === null ? styles.pillNew : styles.pillRating]}>
+              <AppText variant="caption" color={doctor.ratingAvg === null ? 'textMuted' : 'onPrimary'}>
+                {formatRating(doctor)}
+              </AppText>
             </View>
-          )}
+            {doctor.isDemo && <DemoBadge />}
+          </View>
         </View>
       </View>
       <Fact icon={ICONS.language} text={`Speaks ${doctor.languages.join(', ')}`} />
-      <Fact icon={ICONS.doctor} text={`${formatExperience(doctor.experienceYears)} experience`} />
       <View style={styles.footer}>
-        <AppText variant="heading">{formatFee(doctor.feeInr)}</AppText>
-        <AppText variant="label" color={doctor.ratingAvg === null ? 'textMuted' : 'text'}>
-          {formatRating(doctor)}
-        </AppText>
+        <View>
+          <AppText variant="caption" color="textMuted">
+            Consultation fee
+          </AppText>
+          <AppText variant="heading">{formatFee(doctor.feeInr)}</AppText>
+        </View>
+        <View style={styles.cta} importantForAccessibility="no-hide-descendants">
+          <Icon name={ICONS.video} size={20} color="onPrimary" />
+          <AppText variant="small" color="onPrimary" style={{ fontWeight: '700' }}>
+            Book consult
+          </AppText>
+        </View>
       </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm },
-  top: { flexDirection: 'row', gap: spacing.md, alignItems: 'center' },
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    gap: spacing.sm,
+    ...shadow,
+  },
+  top: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  badges: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs, alignItems: 'center' },
+  pill: { borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: 2 },
+  pillRating: { backgroundColor: colors.success },
+  pillNew: { backgroundColor: colors.background },
+  cta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    minHeight: 44,
+  },
   fact: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: colors.background,
+    borderTopColor: colors.border,
     paddingTop: spacing.sm,
     marginTop: spacing.xs,
   },

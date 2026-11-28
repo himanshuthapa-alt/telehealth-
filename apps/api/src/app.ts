@@ -43,6 +43,7 @@ import { orderRoutes } from './modules/orders/orders.routes';
 import { createNotifications } from './modules/notifications/notifications';
 import { speechRoutes } from './modules/speech/speech.routes';
 import { voiceRoutes } from './modules/voice/voice.routes';
+import type { Sarvam } from './modules/voice/sarvam';
 import { addDays, istInstant, type DoctorSource, type FulfillmentSource } from '@telecare/shared';
 
 export interface AppDeps {
@@ -58,6 +59,8 @@ export interface AppDeps {
   video: VideoProvider | null;
   /** Chatterbox TTS service base URL for voice output. */
   ttsBaseUrl: string;
+  /** Indian-language voice (Sarvam AI). null = on-device recognition + Chatterbox only. */
+  sarvam?: Sarvam | null;
   /** Which doctor directory to serve: 'local' (Postgres) or 'practo' (external stub). */
   doctorProvider: DoctorSource;
   /** Who fulfils orders: 'local' (pharmacy queue) or 'partner' (external stub). */
@@ -196,8 +199,8 @@ export function createApp(deps: AppDeps) {
     notify: inbox.notify,
   });
   app.use(orderRoutes(orderService, guards));
-  app.use(speechRoutes(deps.ttsBaseUrl));
-  app.use(voiceRoutes());
+  app.use(speechRoutes(deps.ttsBaseUrl, deps.sarvam ?? null));
+  app.use(voiceRoutes(guards, deps.sarvam ?? null));
 
   app.use(notFoundHandler);
   app.use(errorHandler(deps.logger));

@@ -5,13 +5,25 @@ import { DemoBadge, Fact, plainSpecialties } from '@/features/doctors/DoctorCard
 import { useDoctor } from '@/features/doctors/doctor-queries';
 import { formatExperience, formatFee, formatRating } from '@/features/doctors/format';
 import { ICONS } from '@/features/shell/icons';
-import { AppText, Avatar, Button, Card, QueryState, Screen, Skeleton, spacing } from '@/ui';
+import {
+  AppText,
+  Avatar,
+  Button,
+  Card,
+  Icon,
+  QueryState,
+  Screen,
+  Skeleton,
+  colors,
+  radius,
+  spacing,
+} from '@/ui';
 
 function Profile({ doctor }: { doctor: DoctorDetail }) {
   return (
     <>
-      <View style={styles.top}>
-        <Avatar name={doctor.name} photoUrl={doctor.photoUrl} size={88} />
+      <Card style={styles.top}>
+        <Avatar name={doctor.name} photoUrl={doctor.photoUrl} size={80} />
         <View style={{ flex: 1, gap: spacing.xs }}>
           <AppText variant="heading">{doctor.name}</AppText>
           <AppText color="primary" style={{ fontWeight: '600' }}>
@@ -20,13 +32,20 @@ function Profile({ doctor }: { doctor: DoctorDetail }) {
           <AppText variant="caption" color="textMuted">
             {doctor.specializations.join(', ')}
           </AppText>
-          {doctor.isDemo && (
-            <View style={{ flexDirection: 'row' }}>
+          <View style={styles.badges}>
+            {doctor.isDemo ? (
               <DemoBadge />
-            </View>
-          )}
+            ) : (
+              <View style={styles.verified}>
+                <Icon name={ICONS.verified} size={16} color="success" />
+                <AppText variant="caption" color="success" style={{ fontWeight: '700' }}>
+                  Verified
+                </AppText>
+              </View>
+            )}
+          </View>
         </View>
-      </View>
+      </Card>
 
       <Card>
         <View
@@ -76,5 +95,15 @@ export default function DoctorProfile() {
 
 const styles = StyleSheet.create({
   top: { flexDirection: 'row', gap: spacing.md, alignItems: 'center' },
+  badges: { flexDirection: 'row', marginTop: spacing.xs },
+  verified: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.successSoft,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+  },
   fee: { gap: 0, marginBottom: spacing.xs },
 });

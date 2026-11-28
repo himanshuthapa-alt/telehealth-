@@ -1,3 +1,4 @@
+import { createSarvam } from './modules/voice/sarvam';
 import { createApp, type SweepConsultations } from './app';
 import { createFakeVideoProvider, createHmsVideoProvider } from './modules/consultations/video';
 import { loadConfig } from './config/env';
@@ -46,6 +47,7 @@ const app = createApp({
         ? createFakeVideoProvider()
         : null,
   ttsBaseUrl: config.TTS_BASE_URL,
+  sarvam: config.SARVAM_API_KEY ? createSarvam({ apiKey: config.SARVAM_API_KEY }) : null,
   doctorProvider: config.DOCTOR_PROVIDER,
   fulfillmentProvider: config.FULFILLMENT_PROVIDER,
   corsOrigins: config.CORS_ORIGINS,

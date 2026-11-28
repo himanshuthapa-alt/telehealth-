@@ -51,6 +51,7 @@ const EMERGENCY_WORDS = [
   'poison',
   'seizure',
   'choking',
+  'save me', // how Sarvam translates "bachao"
   // Hindi / Hinglish
   'saans nahi',
   'saans nhi',

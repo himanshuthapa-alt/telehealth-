@@ -17,6 +17,7 @@ export const ICONS = {
   info: icon('info', 'info.circle'),
   offline: icon('wifi_off', 'wifi.slash'),
   lock: icon('lock', 'lock'),
+  verified: icon('verified', 'checkmark.seal.fill'),
   login: icon('login', 'person.badge.key'),
   newAccount: icon('person_add', 'person.badge.plus'),
   language: icon('translate', 'character.bubble'),

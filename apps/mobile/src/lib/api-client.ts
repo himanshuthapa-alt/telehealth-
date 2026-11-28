@@ -109,6 +109,13 @@ export function createApiClient({ baseUrl, timeoutMs = 15_000, fetchImpl = fetch
         body: body === undefined ? undefined : JSON.stringify(body),
         headers,
       }),
+    /** POST a non-JSON body (recorded audio). */
+    upload: <T>(path: string, body: Blob, contentType: string) =>
+      request<T>(
+        path,
+        { method: 'POST', body, headers: { 'Content-Type': contentType } },
+        { timeoutMs: 40_000 },
+      ),
     patch: <T>(path: string, body: unknown) =>
       request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
     put: <T>(path: string, body: unknown) => request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),

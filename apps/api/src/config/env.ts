@@ -31,6 +31,8 @@ const EnvSchema = z
     LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error', 'silent']).default('info'),
     /** Chatterbox TTS service base URL (text-to-speech voice output). */
     TTS_BASE_URL: z.url().default('http://localhost:4123'),
+    /** Sarvam AI key (dashboard.sarvam.ai): voice in 23 Indian languages. Empty = on-device English/Hindi only. */
+    SARVAM_API_KEY: z.string().optional(),
     /** local = Postgres doctor directory; practo = external partner (stub until credentials exist). */
     DOCTOR_PROVIDER: z.enum(DOCTOR_SOURCES).default('local'),
     /** local = in-house pharmacy queue; partner = external delivery partner (stub until credentials exist). */

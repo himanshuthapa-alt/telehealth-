@@ -87,8 +87,10 @@ beforeEach(() => {
 describe('patient tabs', () => {
   it('Home: greets, offers doctor search and specialties, explains the 3 steps, suggests adding details', async () => {
     await renderScreen(<Home />);
-    expect(screen.getByText('Namaste, Asha')).toBeOnTheScreen();
+    expect(screen.getByText('Asha')).toBeOnTheScreen();
     expect(screen.getByText('How it works')).toBeOnTheScreen();
+    await userEvent.press(screen.getByLabelText('Search doctors by name or problem'));
+    expect(mockNavigate).toHaveBeenCalledWith({ pathname: '/patient/doctors', params: {} });
     expect(await screen.findByText('Help your doctor prepare')).toBeOnTheScreen();
 
     await userEvent.press(screen.getByRole('button', { name: 'Child doctor, Pediatrics' }));

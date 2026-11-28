@@ -45,7 +45,7 @@ export function Button({
         <ActivityIndicator color={variant === 'primary' ? colors.onPrimary : colors.primary} />
       ) : (
         <View style={styles.content}>
-          {icon && <Icon name={icon} size={26} color={TEXT[variant]} />}
+          {icon && <Icon name={icon} size={22} color={TEXT[variant]} />}
           <AppText variant="label" color={TEXT[variant]} style={styles.text}>
             {label}
           </AppText>
@@ -67,9 +67,9 @@ const styles = StyleSheet.create({
   content: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   text: { textAlign: 'center', flexShrink: 1 },
   primary: { backgroundColor: colors.primary, minHeight: primaryActionHeight },
-  secondary: { backgroundColor: colors.surface, borderWidth: 2, borderColor: colors.primary },
+  secondary: { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.primary },
   ghost: { backgroundColor: 'transparent' },
-  danger: { backgroundColor: colors.surface, borderWidth: 2, borderColor: colors.danger },
+  danger: { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.danger },
   // Disabled stays readable (not faded to grey-on-grey): a lighter fill, same text.
   inactive: { opacity: 0.55 },
 });
