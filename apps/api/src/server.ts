@@ -1,5 +1,5 @@
 import { createApp, type SweepConsultations } from './app';
-import { createFakeVideoProvider } from './modules/consultations/video';
+import { createFakeVideoProvider, createHmsVideoProvider } from './modules/consultations/video';
 import { loadConfig } from './config/env';
 import { createDatabase } from './platform/db/client';
 import { createLogger } from './platform/logger';
@@ -34,8 +34,17 @@ const app = createApp({
   jwtSecret: config.JWT_SECRET,
   // ponytail: reset codes go to the API log (D3, no SMS); plug an SMS ResetCodeDelivery in here later
   resetCodeDelivery: createLogResetCodeDelivery(logger),
-  // ponytail: no real video vendor yet (needs an account + a native app build); see docs/ARCHITECTURE.md
-  video: config.VIDEO_PROVIDER === 'fake' ? createFakeVideoProvider() : null,
+  video:
+    config.VIDEO_PROVIDER === 'hms'
+      ? createHmsVideoProvider({
+          accessKey: config.HMS_ACCESS_KEY!,
+          appSecret: config.HMS_APP_SECRET!,
+          templateId: config.HMS_TEMPLATE_ID!,
+          roles: { doctor: config.HMS_DOCTOR_ROLE, patient: config.HMS_PATIENT_ROLE },
+        })
+      : config.VIDEO_PROVIDER === 'fake'
+        ? createFakeVideoProvider()
+        : null,
   ttsBaseUrl: config.TTS_BASE_URL,
   doctorProvider: config.DOCTOR_PROVIDER,
   fulfillmentProvider: config.FULFILLMENT_PROVIDER,

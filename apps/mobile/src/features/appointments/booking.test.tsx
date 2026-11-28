@@ -211,9 +211,16 @@ describe('appointment detail', () => {
   });
 });
 
+const STATS = { today: 1, upcoming: 2, completed: 3, earningsInr: 900 };
+/** Today also loads the stats row; answer that path separately. */
+const todayReturns = (list: unknown[]) =>
+  mockGet.mockImplementation((path: string) =>
+    Promise.resolve(path === '/v1/me/doctor-stats' ? STATS : list),
+  );
+
 describe('doctor screens', () => {
   it("Today lists today's patients with their basics", async () => {
-    mockGet.mockResolvedValue([appointment(hoursFromNow(1))]);
+    todayReturns([appointment(hoursFromNow(1))]);
     await renderScreen(<DoctorToday />);
     expect(await screen.findByText('Asha Devi')).toBeOnTheScreen();
     expect(screen.getByText('34 years · Fever for 3 days')).toBeOnTheScreen();
@@ -221,9 +228,10 @@ describe('doctor screens', () => {
   });
 
   it('Today shows an empty state that points to Availability', async () => {
-    mockGet.mockResolvedValue([]);
+    todayReturns([]);
     await renderScreen(<DoctorToday />);
     expect(await screen.findByText('No consultations today.')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Earned: ₹900')).toBeOnTheScreen();
   });
 
   it('Availability saves the chosen blocks and consultation length as weekly rules', async () => {

@@ -1,4 +1,10 @@
-import type { AuthSession, AuthUser, LoginRequest, RegisterRequest } from '@telecare/shared';
+import type {
+  AuthSession,
+  AuthUser,
+  DoctorRegisterRequest,
+  LoginRequest,
+  RegisterRequest,
+} from '@telecare/shared';
 import { ApiError, type ApiClient, type ClientAuth } from './api-client';
 
 export type SessionState =
@@ -98,6 +104,11 @@ export function createSession(publicApi: ApiClient, storage: TokenStorage) {
 
     async register(body: RegisterRequest) {
       await adopt(await publicApi.post<AuthSession>('/v1/auth/register', body));
+    },
+
+    /** Doctor sign-up: logs in straight away; the app shows "awaiting approval" until an admin approves. */
+    async registerDoctor(body: DoctorRegisterRequest) {
+      await adopt(await publicApi.post<AuthSession>('/v1/auth/register/doctor', body));
     },
 
     /** Signs out locally at once; telling the server is best effort (works offline too). */

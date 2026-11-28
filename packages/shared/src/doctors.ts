@@ -59,3 +59,64 @@ export interface Page<T> {
   pageSize: number;
   total: number;
 }
+
+/** A self-registered doctor is PENDING until an admin checks their registration number. */
+export const DOCTOR_VERIFICATION_STATUSES = ['PENDING', 'APPROVED', 'REJECTED'] as const;
+export type DoctorVerificationStatus = (typeof DOCTOR_VERIFICATION_STATUSES)[number];
+
+/** The doctor-editable part of a profile (sign-up and PATCH /v1/me/doctor-profile). */
+export interface DoctorProfileFields {
+  specializations: Specialization[];
+  languages: Language[];
+  experienceYears: number;
+  feeInr: number;
+  bio: string;
+}
+
+/** POST /v1/auth/register/doctor. */
+export interface DoctorRegisterRequest extends DoctorProfileFields {
+  fullName: string;
+  phone: string;
+  password: string;
+  /** State or National Medical Council registration number. Seen only by the doctor and admins. */
+  registrationNumber: string;
+  consent: true;
+}
+
+/** GET /v1/me/doctor-profile: the doctor's own view, including private fields. */
+export interface MyDoctorProfile extends DoctorProfileFields {
+  fullName: string;
+  registrationNumber: string | null;
+  verificationStatus: DoctorVerificationStatus;
+  /** Admin's reason, shown to the doctor when REJECTED. */
+  verificationNote: string | null;
+}
+
+export type UpdateDoctorProfileRequest = Partial<DoctorProfileFields>;
+
+/** GET /v1/me/doctor-stats. Times are IST. */
+export interface DoctorStats {
+  today: number;
+  upcoming: number;
+  completed: number;
+  /** Completed consultations × current fee. */
+  earningsInr: number;
+}
+
+/** GET /v1/admin/doctors: what an admin needs to verify a doctor. */
+export interface DoctorForReview extends DoctorProfileFields {
+  id: string;
+  fullName: string;
+  phone: string;
+  registrationNumber: string | null;
+  verificationStatus: DoctorVerificationStatus;
+  verificationNote: string | null;
+  createdAt: string;
+}
+
+/** POST /v1/admin/doctors/:id/verification */
+export interface DoctorVerificationRequest {
+  status: Exclude<DoctorVerificationStatus, 'PENDING'>;
+  /** Required when rejecting, so the doctor knows what to fix. */
+  note?: string;
+}

@@ -83,7 +83,13 @@ export function createScheduleRepository(db: Database): ScheduleRepository {
         .select(ruleColumns)
         .from(availabilityRules)
         .innerJoin(doctorProfiles, eq(doctorProfiles.userId, availabilityRules.doctorId))
-        .where(and(eq(availabilityRules.doctorId, doctorId), eq(doctorProfiles.isActive, true)));
+        .where(
+          and(
+            eq(availabilityRules.doctorId, doctorId),
+            eq(doctorProfiles.isActive, true),
+            eq(doctorProfiles.verificationStatus, 'APPROVED'),
+          ),
+        );
       const blocked = await db
         .select({ date: availabilityExceptions.date })
         .from(availabilityExceptions)

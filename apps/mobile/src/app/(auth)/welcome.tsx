@@ -44,6 +44,12 @@ export default function Welcome() {
         icon={ICONS.login}
         onPress={() => router.push('/login')}
       />
+      <Button
+        label="I am a doctor, join TeleCare+"
+        variant="ghost"
+        icon={ICONS.doctor}
+        onPress={() => router.push('/register-doctor')}
+      />
 
       <ServerSetting />
     </Screen>

@@ -10,11 +10,12 @@ import {
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { SPECIALIZATIONS } from '@telecare/shared';
+import { DOCTOR_VERIFICATION_STATUSES, SPECIALIZATIONS } from '@telecare/shared';
 import { language } from './patient-profile.schema';
 import { users } from './users.schema';
 
 export const specialization = pgEnum('specialization', SPECIALIZATIONS);
+export const doctorVerification = pgEnum('doctor_verification', DOCTOR_VERIFICATION_STATUSES);
 
 /** Public doctor details, plus private ones (registration number) that are never sent to clients. */
 export const doctorProfiles = pgTable(
@@ -35,6 +36,12 @@ export const doctorProfiles = pgTable(
     registrationNumber: text(),
     isDemo: boolean().notNull().default(false),
     isActive: boolean().notNull().default(true),
+    /**
+     * Only APPROVED doctors are listed and bookable. Defaults to APPROVED because
+     * provisioned (seeded) doctors are trusted; self-registration sets PENDING.
+     */
+    verificationStatus: doctorVerification().notNull().default('APPROVED'),
+    verificationNote: text(),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

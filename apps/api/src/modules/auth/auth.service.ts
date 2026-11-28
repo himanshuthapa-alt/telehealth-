@@ -1,8 +1,14 @@
 import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
-import { passwordProblem, type AuthSession, type AuthUser } from '@telecare/shared';
+import {
+  passwordProblem,
+  type AuthSession,
+  type AuthUser,
+  type DoctorRegisterRequest,
+} from '@telecare/shared';
 import { AppError } from '../../platform/http/errors';
 import { ACCESS_TOKEN_TTL_SECONDS, type AccessTokens, type Actor } from '../../platform/http/auth';
 import type { AuditLog } from '../audit/audit';
+import type { DoctorProfileRepository } from '../users/doctor-profile.repository';
 import type { UserRecord, UsersRepository } from '../users/users.repository';
 import type { RefreshTokenRepository, ResetCodeRepository } from './auth.repository';
 import { DUMMY_HASH, hashPassword, verifyPassword } from './passwords';
@@ -17,6 +23,7 @@ export interface AuthRepos {
   refreshTokens: RefreshTokenRepository;
   resetCodes: ResetCodeRepository;
   audit: AuditLog;
+  doctorProfiles: DoctorProfileRepository;
 }
 
 /** Runs `work` in one database transaction, with repositories bound to it. */
@@ -68,31 +75,47 @@ export function createAuthService({
     };
   }
 
-  return {
-    /** Self-registration is for patients only; doctors and pharmacy staff are provisioned (§12). */
-    async register(
-      input: { fullName: string; phone: string; password: string },
-      req: RequestInfo,
-    ): Promise<AuthSession> {
-      assertPasswordAllowed(input.password, input.phone, 'password');
-      const passwordHash = await hashPassword(input.password);
-      return inTransaction(async (tx) => {
-        const user = await tx.users.create({
-          phone: input.phone,
-          fullName: input.fullName,
-          role: 'PATIENT',
-          passwordHash,
-          consentAt: new Date(),
-        });
-        if (!user) throw new AppError(409, 'PHONE_TAKEN', 'This phone number is already registered');
-        await tx.audit.record({
-          actorId: user.id,
-          actorRole: user.role,
-          action: 'AUTH_REGISTERED',
-          ip: req.ip,
-        });
-        return issueSession(tx, user);
+  async function createAccount(
+    input: { fullName: string; phone: string; password: string; role: 'PATIENT' | 'DOCTOR' },
+    req: RequestInfo,
+    afterCreate?: (tx: AuthRepos, user: UserRecord) => Promise<void>,
+  ): Promise<AuthSession> {
+    assertPasswordAllowed(input.password, input.phone, 'password');
+    const passwordHash = await hashPassword(input.password);
+    return inTransaction(async (tx) => {
+      const user = await tx.users.create({
+        phone: input.phone,
+        fullName: input.fullName,
+        role: input.role,
+        passwordHash,
+        consentAt: new Date(),
       });
+      if (!user) throw new AppError(409, 'PHONE_TAKEN', 'This phone number is already registered');
+      await afterCreate?.(tx, user);
+      await tx.audit.record({
+        actorId: user.id,
+        actorRole: user.role,
+        action: 'AUTH_REGISTERED',
+        ip: req.ip,
+      });
+      return issueSession(tx, user);
+    });
+  }
+
+  return {
+    /** Patient self-registration. Pharmacy staff and admins are provisioned (§12). */
+    register(input: { fullName: string; phone: string; password: string }, req: RequestInfo) {
+      return createAccount({ ...input, role: 'PATIENT' }, req);
+    },
+
+    /** Doctor self-registration. The profile stays PENDING (not listed) until an admin approves it. */
+    registerDoctor(
+      { fullName, phone, password, ...profile }: Omit<DoctorRegisterRequest, 'consent'>,
+      req: RequestInfo,
+    ) {
+      return createAccount({ fullName, phone, password, role: 'DOCTOR' }, req, (tx, user) =>
+        tx.doctorProfiles.createPending(user.id, profile),
+      );
     },
 
     async login(input: { phone: string; password: string }, req: RequestInfo): Promise<AuthSession> {

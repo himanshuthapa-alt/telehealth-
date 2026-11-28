@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { istDate } from '@telecare/shared';
 import { AppointmentList } from '@/features/appointments/AppointmentList';
 import { formatDay } from '@/features/appointments/format';
+import { StatsRow } from '@/features/doctor-account/StatsRow';
 import { useSession } from '@/lib/api';
 import { AppText, EmptyState, Screen } from '@/ui';
 
@@ -13,6 +14,7 @@ export default function Today() {
     <Screen>
       <AppText variant="title">{formatDay(istDate(new Date()))}</AppText>
       <AppText color="textMuted">{name}</AppText>
+      <StatsRow />
       <AppointmentList
         scope="today"
         viewer="DOCTOR"

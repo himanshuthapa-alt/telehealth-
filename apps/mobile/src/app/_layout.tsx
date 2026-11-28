@@ -47,6 +47,9 @@ export default function RootLayout() {
         <Stack.Protected guard={role === 'PHARMACY_ADMIN'}>
           <Stack.Screen name="pharmacy" />
         </Stack.Protected>
+        <Stack.Protected guard={role === 'ADMIN'}>
+          <Stack.Screen name="admin" />
+        </Stack.Protected>
         <Stack.Protected guard={!!role}>
           <Stack.Screen
             name="consultation/[appointmentId]"

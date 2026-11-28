@@ -50,6 +50,7 @@ export default function ConsultationRoom() {
   const viewer: Viewer =
     session.status === 'signedIn' && session.user.role === 'DOCTOR' ? 'DOCTOR' : 'PATIENT';
   const myId = session.status === 'signedIn' ? session.user.id : '';
+  const myName = session.status === 'signedIn' ? session.user.fullName : '';
   const appointment = useAppointment(appointmentId).data;
   const otherName = appointment
     ? viewer === 'PATIENT'
@@ -127,7 +128,9 @@ export default function ConsultationRoom() {
         )}
         {actionError !== null && <Banner tone="danger" message={errorMessage(actionError)} />}
 
-        {c.status === 'ACTIVE' && <VideoPanel video={video} />}
+        {c.status === 'ACTIVE' && (
+          <VideoPanel video={video} name={myName} onVideoFailed={() => void room.reportVideoFailed()} />
+        )}
 
         {viewer === 'DOCTOR' && (c.status === 'ACTIVE' || c.status === 'COMPLETED') && (
           <Button

@@ -64,6 +64,13 @@
       "when": 1791000000000,
       "tag": "0008_orders",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1795843331244,
+      "tag": "0009_doctor_verification",
+      "breakpoints": true
     }
   ]
 }

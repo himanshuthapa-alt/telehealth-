@@ -4,6 +4,7 @@ import { PASSWORD_MAX_LENGTH, normalizePhone } from '@telecare/shared';
 import { getActor, type AuthGuards } from '../../platform/http/auth';
 import { createRateLimiter } from '../../platform/http/rate-limit';
 import { parseBody } from '../../platform/http/validate';
+import { doctorFields, registrationNumber } from '../users/doctor-profile.routes';
 import type { AuthService } from './auth.service';
 
 const phone = z
@@ -23,6 +24,12 @@ const RegisterBody = z.strictObject({
   phone,
   password,
   consent: z.literal(true, 'Please accept the privacy notice to continue'),
+});
+const RegisterDoctorBody = z.strictObject({
+  ...RegisterBody.shape,
+  ...doctorFields,
+  bio: doctorFields.bio.default(''),
+  registrationNumber,
 });
 const LoginBody = z.strictObject({ phone, password });
 const RefreshBody = z.strictObject({ refreshToken });
@@ -51,6 +58,11 @@ export function authRoutes(service: AuthService, guards: AuthGuards): Router {
   router.post('/v1/auth/register', async (req, res) => {
     const body = parseBody(RegisterBody, req);
     res.status(201).json(await service.register(body, info(req)));
+  });
+
+  router.post('/v1/auth/register/doctor', async (req, res) => {
+    const { consent: _consent, ...body } = parseBody(RegisterDoctorBody, req);
+    res.status(201).json(await service.registerDoctor(body, info(req)));
   });
 
   router.post('/v1/auth/login', async (req, res) => {

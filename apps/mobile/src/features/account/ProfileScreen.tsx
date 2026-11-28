@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import type { Role } from '@telecare/shared';
@@ -8,10 +9,11 @@ const ROLE_LABEL: Record<Role, string> = {
   PATIENT: 'Patient',
   DOCTOR: 'Doctor',
   PHARMACY_ADMIN: 'Pharmacy admin',
+  ADMIN: 'Admin',
 };
 
-/** Profile tab, shared by all three roles. */
-export function ProfileScreen() {
+/** Profile tab, shared by every role. `children` adds role-specific sections under the account card. */
+export function ProfileScreen({ children }: { children?: ReactNode }) {
   const state = useSession();
   if (state.status !== 'signedIn') return null;
   const { user } = state;
@@ -29,6 +31,7 @@ export function ProfileScreen() {
           <AppText>{ROLE_LABEL[user.role]}</AppText>
         </View>
       </Card>
+      {children}
       <Button label="Change password" variant="secondary" onPress={() => router.push('/change-password')} />
       <Button label="Log out" variant="ghost" onPress={() => void session.logout()} />
     </Screen>

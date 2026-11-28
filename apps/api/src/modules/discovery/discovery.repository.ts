@@ -56,7 +56,12 @@ const ORDER_BY: Record<NonNullable<DoctorSearchParams['sort']>, SQL[]> = {
 const likePattern = (text: string) => `%${text.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 
 export function createDoctorDirectory(db: Database, now: () => Date = () => new Date()): DoctorDirectory {
-  const visible = and(eq(users.role, 'DOCTOR'), eq(doctorProfiles.isActive, true));
+  // Self-registered doctors appear only after an admin approves them.
+  const visible = and(
+    eq(users.role, 'DOCTOR'),
+    eq(doctorProfiles.isActive, true),
+    eq(doctorProfiles.verificationStatus, 'APPROVED'),
+  );
 
   return {
     async search({ q, specialization, language, minRating, available, sort = 'rating', page = 1 }) {
@@ -92,7 +97,8 @@ export function createDoctorDirectory(db: Database, now: () => Date = () => new 
         .innerJoin(users, eq(users.id, doctorProfiles.userId))
         .where(and(...filters))
         // Name then id as tie-breakers, so paging never skips or repeats a doctor.
-        .orderBy(...ORDER_BY[sort], asc(users.fullName), asc(users.id))
+        // Real (verified) doctors before seeded demo ones, then the chosen sort.
+        .orderBy(asc(doctorProfiles.isDemo), ...ORDER_BY[sort], asc(users.fullName), asc(users.id))
         .limit(DOCTOR_PAGE_SIZE)
         .offset((page - 1) * DOCTOR_PAGE_SIZE);
 

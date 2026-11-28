@@ -14,6 +14,7 @@ export const SEED_USERS: { phone: string; fullName: string; role: Role }[] = [
   { phone: '+919000000001', fullName: 'Asha Devi (demo patient)', role: 'PATIENT' },
   { phone: '+919000000002', fullName: 'Dr. Rakesh Sharma (demo doctor)', role: 'DOCTOR' },
   { phone: '+919000000003', fullName: 'City Pharmacy (demo admin)', role: 'PHARMACY_ADMIN' },
+  { phone: '+919000000004', fullName: 'TeleCare Admin (demo)', role: 'ADMIN' },
 ];
 export const SEED_PASSWORD = 'TeleCare@2026';
 

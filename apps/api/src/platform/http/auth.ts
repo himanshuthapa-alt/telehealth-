@@ -42,7 +42,15 @@ export type AccessTokens = ReturnType<typeof createAccessTokens>;
  * Route guards (blueprint §12, layer 1). They only check "logged in" and
  * "has this role". Ownership checks happen in each service.
  */
-export function createAuthGuards(tokens: AccessTokens, audit: AuditLog) {
+/**
+ * @param doctorBlocked true if this DOCTOR account must not act as a doctor yet
+ *   (self-registered and not, or no longer, approved by an admin).
+ */
+export function createAuthGuards(
+  tokens: AccessTokens,
+  audit: AuditLog,
+  doctorBlocked: (doctorId: string) => Promise<boolean> = async () => false,
+) {
   const requireAuth: RequestHandler = async (req, res, next) => {
     const header = req.get('authorization') ?? '';
     const actor = header.startsWith('Bearer ') ? await tokens.verify(header.slice(7)) : null;
@@ -51,12 +59,18 @@ export function createAuthGuards(tokens: AccessTokens, audit: AuditLog) {
     next();
   };
 
-  /** Use after `requireAuth`. Denied attempts are written to the audit log. */
+  /**
+   * Use after `requireAuth`. Denied attempts are written to the audit log.
+   * Doctors must also be verified, checked on every request so removing approval takes effect at once.
+   */
   const requireRole =
     (...roles: Role[]): RequestHandler =>
     async (req, res, next) => {
       const actor = getActor(res);
-      if (roles.includes(actor.role)) return next();
+      if (roles.includes(actor.role)) {
+        if (actor.role !== 'DOCTOR' || !(await doctorBlocked(actor.id))) return next();
+        return next(new AppError(403, 'DOCTOR_NOT_VERIFIED', 'Your doctor account is awaiting approval'));
+      }
       await audit.record({
         actorId: actor.id,
         actorRole: actor.role,
@@ -67,7 +81,13 @@ export function createAuthGuards(tokens: AccessTokens, audit: AuditLog) {
       next(new AppError(403, 'FORBIDDEN', 'You do not have access to this'));
     };
 
-  return { requireAuth, requireRole };
+  /** A doctor's own account, approved or not: for reading/editing their profile while they wait. */
+  const requireDoctorAccount: RequestHandler = (req, res, next) =>
+    getActor(res).role === 'DOCTOR'
+      ? next()
+      : next(new AppError(403, 'FORBIDDEN', 'You do not have access to this'));
+
+  return { requireAuth, requireRole, requireDoctorAccount };
 }
 
 export type AuthGuards = ReturnType<typeof createAuthGuards>;

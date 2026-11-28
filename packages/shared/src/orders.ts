@@ -1,3 +1,4 @@
+import type { Role } from './roles';
 export const ORDER_STATUSES = [
   'PENDING',
   'CONFIRMED',
@@ -96,11 +97,7 @@ export interface UpdateOrderStatusRequest {
  * - Patient: can cancel only while PENDING
  * - Pharmacy: can cancel while PENDING, CONFIRMED, or PACKED (reason required)
  */
-export function canTransitionOrder(
-  from: OrderStatus,
-  to: OrderStatus,
-  role: 'PATIENT' | 'PHARMACY_ADMIN' | 'DOCTOR',
-): boolean {
+export function canTransitionOrder(from: OrderStatus, to: OrderStatus, role: Role): boolean {
   if (from === to) return false;
   if (from === 'CANCELLED' || from === 'DELIVERED') return false; // terminal
 

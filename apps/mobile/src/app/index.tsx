@@ -6,6 +6,7 @@ const HOME = {
   PATIENT: '/patient/home',
   DOCTOR: '/doctor/today',
   PHARMACY_ADMIN: '/pharmacy/orders',
+  ADMIN: '/admin/doctors',
 } as const satisfies Record<Role, string>;
 
 /** Entry point: sends each user to the right place. */

@@ -18,3 +18,6 @@ jest.mock('expo-speech-recognition', () => ({
   },
   useSpeechRecognitionEvent: jest.fn(),
 }));
+
+// 100ms video SDK is native-only; tests use the fake/none video providers.
+jest.mock('@100mslive/react-native-hms', () => ({}));

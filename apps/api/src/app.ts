@@ -13,6 +13,8 @@ import type { ResetCodeDelivery } from './modules/auth/reset-code-delivery';
 import { createUsersRepository } from './modules/users/users.repository';
 import { createPatientProfileRepository } from './modules/users/patient-profile.repository';
 import { usersRoutes } from './modules/users/users.routes';
+import { createDoctorProfileRepository } from './modules/users/doctor-profile.repository';
+import { doctorProfileRoutes } from './modules/users/doctor-profile.routes';
 import { createDoctorDirectory } from './modules/discovery/discovery.repository';
 import { createPractoDirectory } from './modules/discovery/discovery.practo';
 import { discoveryRoutes } from './modules/discovery/discovery.routes';
@@ -79,9 +81,14 @@ export function createApp(deps: AppDeps) {
     refreshTokens: createRefreshTokenRepository(db),
     resetCodes: createResetCodeRepository(db),
     audit: createAuditLog(db),
+    doctorProfiles: createDoctorProfileRepository(db),
   });
   const accessTokens = createAccessTokens(deps.jwtSecret);
-  const guards = createAuthGuards(accessTokens, createAuditLog(deps.db));
+  const guards = createAuthGuards(
+    accessTokens,
+    createAuditLog(deps.db),
+    createDoctorProfileRepository(deps.db).isBlocked,
+  );
   const authService = createAuthService({
     repos: repos(deps.db),
     inTransaction: (work) => deps.db.transaction((tx) => work(repos(tx))),
@@ -93,6 +100,7 @@ export function createApp(deps: AppDeps) {
   app.use(authRoutes(authService, guards));
   app.use(usersRoutes(createPatientProfileRepository(deps.db), guards));
   const now = deps.now ?? (() => new Date());
+  app.use(doctorProfileRoutes(createDoctorProfileRepository(deps.db, now), createAuditLog(deps.db), guards));
   const directory =
     deps.doctorProvider === 'practo' ? createPractoDirectory() : createDoctorDirectory(deps.db, now);
   const schedule = createScheduleRepository(deps.db);

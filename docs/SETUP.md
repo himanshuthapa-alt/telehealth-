@@ -35,7 +35,18 @@ The app finds the API on the same machine that serves the JS bundle (port 4000),
 
 ## Video
 
-`VIDEO_PROVIDER` in `apps/api/.env`: `fake` (default; rooms and tokens without real video, the app says "Video demo mode") or `none` (chat-only consultations). A real provider needs a vendor account and a native build; see ARCHITECTURE.md.
+`VIDEO_PROVIDER` in `apps/api/.env`:
+
+- `hms`: real video calls through [100ms](https://www.100ms.live). Free tier: 10,000 minutes/month (check current limits).
+  1. Create a 100ms account and a "Video Conferencing" template.
+  2. From the dashboard's Developer page copy the **App Access Key** and **App Secret**; copy the template's **Template ID**.
+  3. Set `HMS_ACCESS_KEY`, `HMS_APP_SECRET`, `HMS_TEMPLATE_ID`. If your template's roles are not named `host`/`guest`, set `HMS_DOCTOR_ROLE` / `HMS_PATIENT_ROLE` to match.
+  4. Restart the API. The app needs the native dev build (`npm run android -w @telecare/mobile`); Expo Go can't run 100ms.
+     The secret stays on the server: the app only ever gets a short-lived join token.
+- `fake` (default): rooms and tokens without real video; the app says "Video demo mode".
+- `none`: chat-only consultations.
+
+If video can't start (no permission, network), the consultation continues in the chat.
 
 ## Voice (speech navigation)
 

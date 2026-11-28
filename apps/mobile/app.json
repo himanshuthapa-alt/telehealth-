@@ -9,7 +9,11 @@
     "userInterfaceStyle": "light",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "in.telecareplus.app"
+      "bundleIdentifier": "in.telecareplus.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow TeleCare+ to use the camera for video consultations.",
+        "NSMicrophoneUsageDescription": "Allow TeleCare+ to use the microphone for consultations and voice navigation."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +23,14 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "in.telecareplus.app"
+      "package": "in.telecareplus.app",
+      "permissions": [
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.CAMERA",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "output": "single",

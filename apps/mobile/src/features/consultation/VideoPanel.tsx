@@ -2,13 +2,24 @@ import { StyleSheet, View } from 'react-native';
 import type { VideoAccess } from '@telecare/shared';
 import { ICONS } from '@/features/shell/icons';
 import { AppText, Icon, colors, radius, spacing } from '@/ui';
+import { HmsCall } from './HmsCall';
 
 /**
  * Where the video call shows (blueprint §13.2: one client component for any
- * provider). No real video vendor is connected yet, so it says honestly what is
- * happening instead of pretending.
+ * provider). 100ms rooms get a real call; demo and chat-only modes say honestly
+ * what is happening instead of pretending.
  */
-export function VideoPanel({ video }: { video: VideoAccess | null }) {
+export function VideoPanel({
+  video,
+  name,
+  onVideoFailed,
+}: {
+  video: VideoAccess | null;
+  /** Shown to the other person in the call. */
+  name: string;
+  onVideoFailed: () => void;
+}) {
+  if (video?.provider === 'hms') return <HmsCall video={video} name={name} onFailed={onVideoFailed} />;
   const demo = video?.provider === 'fake';
   return (
     <View
