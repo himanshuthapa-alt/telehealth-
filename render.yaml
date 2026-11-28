@@ -23,7 +23,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: VIDEO_PROVIDER
-        value: fake # set to hms once HMS_* are filled in
+        value: p2p # free direct video; hms or daily need their keys
       - key: DAILY_API_KEY
         sync: false # set VIDEO_PROVIDER=daily to use it
       - key: HMS_ACCESS_KEY
