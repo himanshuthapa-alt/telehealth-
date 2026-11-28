@@ -3,7 +3,7 @@
 College minor project: a mobile-first telemedicine + e-pharmacy app.
 Journey: **discover → book → consult → prescribe → order → track**.
 
-**Status:** Phase 8 (Orders & Pharmacy) complete. During or up to 24 h after a consultation the doctor writes a prescription from the medicine catalog (or free text), issues it, and it appears in the chat as a card and in the patient's Medicines tab. Patients can build an order directly from the prescription with Cash on Delivery (COD), tracking each order via Crockford Base32 tracking IDs (`TC-XXXX-XXXX`) and a real-time status timeline. Pharmacy staff manage incoming orders and inventory directly through the app queue. Voice navigation (Phase A–B) lets low-literacy patients drive the app by speaking in English/Hindi/Hinglish: on-device speech-to-text, a rule-based intent parser, and spoken replies via a self-hosted Chatterbox TTS service. The earlier Groq symptom-triage feature has been removed.
+**Status:** feature-complete for the minor-project demo (branch `sandbox/minor-project-demo`). The full journey runs: doctors sign up with their medical council registration and are verified by an admin; patients find (real doctors first), book, consult (chat; real video via 100ms with `VIDEO_PROVIDER=hms`), receive a prescription that shows the doctor's qualification and registration number, order it for cash on delivery and track it, while the pharmacy confirms, packs, ships and manages stock. An in-app inbox tells each person what happened. Voice navigation (English/Hindi/Hinglish) helps low-literacy patients. The plan, test matrix, bug log and demo script are in **[docs/MINOR_PROJECT_PLAN.md](docs/MINOR_PROJECT_PLAN.md)**.
 
 | Path              | What                                                         |
 | ----------------- | ------------------------------------------------------------ |
@@ -19,7 +19,7 @@ npm install
 npm run db:up        # PostgreSQL 18 in Docker
 cp apps/api/.env.example apps/api/.env
 npm run db:migrate
-npm run db:seed      # demo patient, doctor and pharmacy accounts
+npm run db:seed      # demo patient, doctor, pharmacy and admin accounts
 npm run dev:api      # http://localhost:4000/health
 npm run dev:mobile   # Expo; press "a" for Android
 npm run check        # format + lint + typecheck + all tests

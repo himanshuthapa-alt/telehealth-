@@ -208,25 +208,30 @@ Rule: nothing new after day 9. Every change after that must fix a bug found in a
 
 Environment: local API + Postgres (Docker), Expo web build in Chrome, Android emulator (dev build with 100ms).
 
-| ID     | Step                                                                   | Result                                          |
-| ------ | ---------------------------------------------------------------------- | ----------------------------------------------- |
-| E2E-01 | App opens on web (Chrome) and Android                                  | ✅ (web needed CORS + web token storage: fixed) |
-| E2E-02 | "I am a doctor" → sign up Dr. Meera Iyer (DMC-2018/45678, Pediatrics)  | ✅ lands on "Awaiting approval"                 |
-| E2E-03 | Log in as admin 9000000004                                             | ✅ queue shows her with all details             |
-| E2E-04 | Reject without reason                                                  | ✅ Reject disabled                              |
-| E2E-05 | Approve                                                                | ✅ moves to Approved                            |
-| E2E-06 | Doctor logs in: dashboard + stats + editable profile                   | ✅                                              |
-| E2E-07 | Doctor sets Sat afternoon/evening + Sun morning, 15-min slots          | ✅ "Hours saved"                                |
-| E2E-08 | New patient Ramesh → Child doctor → Dr. Meera listed first ("New")     | ✅                                              |
-| E2E-09 | Register with empty form                                               | ✅ all field errors                             |
-| E2E-10 | Register with the doctor's phone                                       | ✅ clear message                                |
-| E2E-11 | Slot picker hides times inside the lead time                           | ✅ (BUG-01 found)                               |
-| E2E-12 | Book 12:30 today with a reason                                         | ✅ "room opens at 12:20" (BUG-02 found)         |
-| E2E-13 | Doctor sees booking on Today; stats update                             | see below                                       |
-| E2E-14 | Both join; doctor starts; chat both ways                               | see below                                       |
-| E2E-15 | Doctor issues prescription; patient sees card and Medicines tab        | see below                                       |
-| E2E-16 | Patient orders from prescription (COD); tracking ID shown              | see below                                       |
-| E2E-17 | Pharmacy confirms → packs → ships → delivers; patient timeline updates | see below                                       |
+| ID     | Step                                                                    | Result                                                             |
+| ------ | ----------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| E2E-01 | App opens on web (Chrome) and Android                                   | ✅ (web needed CORS + web token storage: fixed)                    |
+| E2E-02 | "I am a doctor" → sign up Dr. Meera Iyer (DMC-2018/45678, Pediatrics)   | ✅ lands on "Awaiting approval"                                    |
+| E2E-03 | Log in as admin 9000000004                                              | ✅ queue shows her with all details                                |
+| E2E-04 | Reject without reason                                                   | ✅ Reject disabled                                                 |
+| E2E-05 | Approve                                                                 | ✅ moves to Approved                                               |
+| E2E-06 | Doctor logs in: dashboard + stats + editable profile                    | ✅                                                                 |
+| E2E-07 | Doctor sets Sat afternoon/evening + Sun morning, 15-min slots           | ✅ "Hours saved"                                                   |
+| E2E-08 | New patient Ramesh → Child doctor → Dr. Meera listed first ("New")      | ✅                                                                 |
+| E2E-09 | Register with empty form                                                | ✅ all field errors                                                |
+| E2E-10 | Register with the doctor's phone                                        | ✅ clear message                                                   |
+| E2E-11 | Slot picker hides times inside the lead time                            | ✅ (BUG-01 found)                                                  |
+| E2E-12 | Book 12:30 today with a reason                                          | ✅ "room opens at 12:20" (BUG-02 found)                            |
+| E2E-13 | Doctor sees booking on Today; stats update                              | see below                                                          |
+| E2E-14 | Both join; doctor starts; chat both ways                                | see below                                                          |
+| E2E-15 | Doctor issues prescription; patient sees card and Medicines tab         | see below                                                          |
+| E2E-16 | Patient orders from prescription (COD); tracking ID shown               | see below                                                          |
+| E2E-17 | Pharmacy confirms → packs → ships → delivers; patient timeline updates  | see below                                                          |
+| E2E-18 | Android: airplane mode on Doctors tab, then off                         | ✅ offline banner + "loads by itself"; list returned without a tap |
+| E2E-19 | Pharmacy (web): inventory shows exact stock; +10 on Ambroxol            | ✅ 60 → 70                                                         |
+| E2E-20 | Doctor adds missing qualification; empty value refused                  | ✅ field error, then "Saved."                                      |
+| E2E-21 | Deploy rehearsal: clean install with Render's command, production start | ✅ migrations ran, `/health` ok, login 200                         |
+| E2E-22 | Patient booking detail inside the 2 h cutoff                            | ✅ no Cancel button, rule explained                                |
 
 ---
 

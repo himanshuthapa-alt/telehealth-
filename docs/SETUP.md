@@ -23,11 +23,14 @@ The app finds the API on the same machine that serves the JS bundle (port 4000),
 
 ## Demo accounts
 
-| Role           | Mobile     | Password        |
-| -------------- | ---------- | --------------- |
-| Patient        | 9000000001 | `TeleCare@2026` |
-| Doctor         | 9000000002 | `TeleCare@2026` |
-| Pharmacy admin | 9000000003 | `TeleCare@2026` |
+| Role                     | Mobile     | Password        |
+| ------------------------ | ---------- | --------------- |
+| Patient                  | 9000000001 | `TeleCare@2026` |
+| Doctor                   | 9000000002 | `TeleCare@2026` |
+| Pharmacy admin           | 9000000003 | `TeleCare@2026` |
+| Admin (verifies doctors) | 9000000004 | `TeleCare@2026` |
+
+New doctors sign up from the welcome screen ("I am a doctor") and appear to patients after the admin approves them.
 
 `db:seed` also creates 16 demo doctors (phones `+919000000101`–`115`, same password), each marked "(demo)", with consulting hours (three patterns, IST) unless the doctor has already set their own. It is safe to run again. It refuses to run when `NODE_ENV=production`.
 
