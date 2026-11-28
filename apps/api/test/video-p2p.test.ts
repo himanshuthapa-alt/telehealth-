@@ -22,23 +22,27 @@ const token = async (room: string, user: string, role: 'DOCTOR' | 'PATIENT') =>
 const signal = (t: string, data: unknown) =>
   fetch(`${server.url}/v1/rtc/signal`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ t, data }),
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${t}` },
+    body: JSON.stringify({ data }),
   });
 const inbox = async (t: string) =>
-  (await (await fetch(`${server.url}/v1/rtc/signal?t=${encodeURIComponent(t)}&after=0`)).json()) as {
+  (await (
+    await fetch(`${server.url}/v1/rtc/signal?after=0`, { headers: { authorization: `Bearer ${t}` } })
+  ).json()) as {
     signals: { data: unknown }[];
+    doctor: boolean;
   };
 
 describe('direct (P2P) video', () => {
-  it('serves the call page only with a valid call token', async () => {
+  it('the call page holds no secret; signalling needs a valid call token in the header', async () => {
     const doc = await token('c-1', 'doc', 'DOCTOR');
-    const ok = await fetch(`${server.url}/v1/rtc/call?t=${doc}`);
-    expect(ok.status).toBe(200);
-    expect(await ok.text()).toContain('"doctor":true');
-    expect((await fetch(`${server.url}/v1/rtc/call?t=forged.token.value`)).status).toBe(401);
+    const page = await (await fetch(`${server.url}/v1/rtc/call`)).text();
+    expect(page).not.toContain(doc);
+    expect((await inbox(doc)).doctor).toBe(true);
     const forged = await createP2pVideoProvider('y'.repeat(40)).issueJoinToken('c-1', 'x', 'DOCTOR', 600);
-    expect((await fetch(`${server.url}/v1/rtc/call?t=${forged.token}`)).status).toBe(401);
+    expect((await signal(forged.token, { type: 'hello' })).status).toBe(401);
+    const noToken = await fetch(`${server.url}/v1/rtc/signal?after=0`);
+    expect(noToken.status).toBe(401);
   });
 
   it('relays signals to the other person in the same room only', async () => {

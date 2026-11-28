@@ -3,7 +3,7 @@ import { PermissionsAndroid, Platform, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import type { VideoAccess } from '@telecare/shared';
 import { AppText, Banner, colors, radius } from '@/ui';
-import { callUrl } from './call-url';
+import { callPageUrl, callUrl } from './call-url';
 
 /**
  * A video call shown in a web view: our direct (P2P) call page or Daily Prebuilt.
@@ -17,7 +17,7 @@ export function WebCall({ video, onFailed }: { video: VideoAccess; name: string;
 
   useEffect(() => {
     if (video.provider !== 'p2p') return;
-    fetch(callUrl(video))
+    fetch(callPageUrl())
       .then((r) => (r.ok ? r.text() : Promise.reject(new Error(String(r.status)))))
       .then(setHtml)
       .catch(onFailed);
@@ -48,6 +48,8 @@ export function WebCall({ video, onFailed }: { video: VideoAccess; name: string;
       <WebView
         source={html !== null ? { html, baseUrl: 'http://localhost' } : { uri: callUrl(video) }}
         style={styles.web}
+        // Hand the token to the page in memory, not in a URL.
+        injectedJavaScriptBeforeContentLoaded={`window.__CALL_TOKEN__=${JSON.stringify(video.token)};true;`}
         mediaPlaybackRequiresUserAction={false}
         allowsInlineMediaPlayback
         mediaCapturePermissionGrantType="grant"

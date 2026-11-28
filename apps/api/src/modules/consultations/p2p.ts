@@ -48,14 +48,18 @@ export function createP2pVideoProvider(jwtSecret: string): VideoProvider {
   };
 }
 
-const SignalBody = z.strictObject({ t: z.string().min(10).max(2000), data: z.unknown() });
+const SignalBody = z.strictObject({ data: z.unknown() });
 
 export function p2pRoutes(jwtSecret: string): Router {
   const key = keyOf(jwtSecret);
   const router = Router();
 
+  // The call token travels in the Authorization header, never in a URL (URLs end up in logs).
+  const bearer = (req: express.Request) => req.get('authorization')?.replace(/^Bearer /, '');
+
   async function verify(token: unknown) {
-    if (typeof token !== 'string') throw new AppError(401, 'UNAUTHENTICATED', 'Missing call token.');
+    if (typeof token !== 'string' || !token)
+      throw new AppError(401, 'UNAUTHENTICATED', 'Missing call token.');
     try {
       const { payload } = await jwtVerify(token, key);
       return { room: String(payload.room), userId: String(payload.sub), role: payload.role as Role };
@@ -66,23 +70,26 @@ export function p2pRoutes(jwtSecret: string): Router {
 
   // The call page fetches cross-origin from a web view, with the token (not cookies) as proof.
   router.use('/v1/rtc', (req, res, next) => {
-    res.set({ 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'content-type' });
+    res.set({
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'authorization, content-type',
+    });
     if (req.method === 'OPTIONS') return void res.status(204).end();
     next();
   });
 
-  router.get('/v1/rtc/call', async (req, res) => {
-    const me = await verify(req.query.t);
-    const api = `${req.protocol}://${req.get('host')}`;
+  // The page is public and holds no secret: the app hands it the token in the
+  // URL fragment (#t=, which browsers never send to a server) or by injecting it.
+  router.get('/v1/rtc/call', (req, res) => {
     res
       .type('html')
       .set('Cache-Control', 'no-store')
-      .send(callPage(api, String(req.query.t), me.role));
+      .send(callPage(`${req.protocol}://${req.get('host')}`));
   });
 
   router.post('/v1/rtc/signal', express.json({ limit: '64kb' }), async (req, res) => {
-    const { t, data } = SignalBody.parse(req.body);
-    const me = await verify(t);
+    const { data } = SignalBody.parse(req.body);
+    const me = await verify(bearer(req));
     const room = rooms.get(me.room) ?? { signals: [], next: 1, touched: 0 };
     room.signals.push({ n: room.next++, from: me.userId, data });
     if (room.signals.length > MAX_SIGNALS_PER_ROOM) room.signals.shift();
@@ -94,20 +101,20 @@ export function p2pRoutes(jwtSecret: string): Router {
   });
 
   router.get('/v1/rtc/signal', async (req, res) => {
-    const me = await verify(req.query.t);
+    const me = await verify(bearer(req));
     const after = Number(req.query.after) || 0;
     const room = rooms.get(me.room);
     const signals = (room?.signals ?? []).filter((s) => s.n > after && s.from !== me.userId);
-    res.json({ signals, last: room ? room.next - 1 : 0 });
+    res.json({ signals, last: room ? room.next - 1 : 0, doctor: me.role === 'DOCTOR' });
   });
 
   return router;
 }
 
 /** The call screen. Doctor makes the offer; patient answers. Polls for signals once a second. */
-function callPage(api: string, token: string, role: Role) {
+function callPage(api: string) {
   // Escape '<' so nothing in the config (e.g. a Host header) can close the script tag.
-  const cfg = JSON.stringify({ api, token, doctor: role === 'DOCTOR', stun: STUN }).replace(/</g, '\\u003c');
+  const cfg = JSON.stringify({ api, stun: STUN }).replace(/</g, '\\u003c');
   return `<!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Video call</title>
@@ -126,10 +133,13 @@ function callPage(api: string, token: string, role: Role) {
 <div id="bar"><button id="mic" aria-label="Mute microphone">Mic on</button><button id="cam" aria-label="Turn camera off">Camera on</button></div>
 <script>
 const C=${cfg};
+C.token=window.__CALL_TOKEN__||new URLSearchParams(location.hash.slice(1)).get('t')||'';
+history.replaceState(null,'',location.pathname);
+const H={authorization:'Bearer '+C.token};
 const $=id=>document.getElementById(id);
 const say=t=>{$('status').textContent=t;$('status').style.display=t?'block':'none'};
 let pc=null,stream=null,after=0,pending=[],sid=null;
-async function send(data){await fetch(C.api+'/v1/rtc/signal',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({t:C.token,data})})}
+async function send(data){await fetch(C.api+'/v1/rtc/signal',{method:'POST',headers:{...H,'content-type':'application/json'},body:JSON.stringify({data})})}
 function newPc(id){
   if(pc)pc.close();
   sid=id;pending=[];
@@ -151,7 +161,7 @@ async function onSignal(d){
 }
 function flush(){pending.forEach(c=>pc.addIceCandidate(c).catch(()=>{}));pending=[]}
 async function poll(){
-  try{const r=await fetch(C.api+'/v1/rtc/signal?t='+encodeURIComponent(C.token)+'&after='+after);
+  try{const r=await fetch(C.api+'/v1/rtc/signal?after='+after,{headers:H});
     if(r.status===401){say('This call link has expired. Go back and rejoin.');return}
     const j=await r.json();for(const s of j.signals){after=Math.max(after,s.n);await onSignal(s.data).catch(()=>{})}
   }catch(e){}
@@ -163,9 +173,11 @@ $('cam').onclick=()=>{const t=stream.getVideoTracks()[0];t.enabled=!t.enabled;$(
   try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:true})}
   catch(e){say('Camera or microphone is blocked. Allow them, or use the chat.');return}
   $('local').srcObject=stream;
+  // Who am I, and skip signals from before this page opened; then say hello.
+  try{const r=await fetch(C.api+'/v1/rtc/signal?after=0',{headers:H});
+    if(r.status===401){say('This call link has expired. Go back and rejoin.');return}
+    const j=await r.json();after=j.last||0;C.doctor=j.doctor}catch(e){say('Could not reach the server. Use the chat.');return}
   say(C.doctor?'Waiting for your patient to join the video…':'Waiting for the doctor to join the video…');
-  // Skip signals from before this page opened; then say hello.
-  try{const r=await fetch(C.api+'/v1/rtc/signal?t='+encodeURIComponent(C.token)+'&after=0');after=(await r.json()).last||0}catch(e){}
   await send({type:'hello'});poll();
 })();
 </script></body></html>`;
