@@ -77,9 +77,11 @@ export function MicButton({ status, onPress, label }: MicButtonProps) {
           <Icon name={MIC} size={34} color="onPrimary" />
         </Pressable>
       </Animated.View>
-      <AppText variant="caption" color="text" style={styles.label}>
-        {label ?? look.word}
-      </AppText>
+      <View style={styles.labelPill}>
+        <AppText variant="caption" color="text" style={styles.label} numberOfLines={1}>
+          {label ?? look.word}
+        </AppText>
+      </View>
     </View>
   );
 }
@@ -99,12 +101,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   pressed: { opacity: 0.85 },
-  label: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    overflow: 'hidden',
-    fontWeight: '700',
-  },
+  // Pill on a View, not the Text: Android mis-measures padded text and cuts it off.
+  labelPill: { backgroundColor: colors.surface, borderRadius: radius.pill, paddingHorizontal: spacing.sm },
+  label: { fontWeight: '700', textAlign: 'center' },
 });
