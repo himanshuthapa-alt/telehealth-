@@ -21,3 +21,6 @@ apps/mobile/ios/
 npm-debug.log*
 .DS_Store
 coverage/
+
+# Sarvam first-call output
+apps/api/sarvam-test.wav
